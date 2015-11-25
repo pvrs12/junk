@@ -5,23 +5,23 @@
 
 void print_field_labels(char** field, int rows, int cols){
 	int i,j;
-	printf(" | ");
+	printf("   | ");
 	for(j=0;j<cols;++j){
-		printf("%d ",j);
+		printf("%2d ",j);
 	}
 	printf("\n");
-	printf("-+-");
+	printf("---+-");
 	for(j=0;j<cols;++j){
-		printf("--");
+		printf("----");
 	}
 	printf("\n");
 	for(i=0;i<rows;++i){
-		printf("%d| ",i);
+		printf("%3d|  ",i);
 		for(j=0;j<cols;++j){
 			if(field[i][j]=='0'){
-				printf("- ");
+				printf("-  ");
 			} else {
-				printf("%c ",field[i][j]);
+				printf("%c  ",field[i][j]);
 			}
 		}
 		printf("\n");
@@ -427,13 +427,13 @@ guess:
 			printf("\tYou must select a flag type, g, f, or u\n(g)uess\t(f)lag\t(u)nflag\n");
 			continue;
 		}
-		if(flag=='g'&&guess_field[gRow][gCol]=='f'){
+		if(flag=='g'&&guess_field[gRow][gCol]=='@'){
 			printf("\tLocation is flagged, choose another\n");
 			continue;
 		}
 		if(flag=='f'){
 			if(guess_field[gRow][gCol]!='*'){
-				printf("\tLocation uncovered or already flagged, choose another\n");
+				printf("\tLocation uncovered or already flagged or uncovered, choose another\n");
 				continue;
 			}
 			flag_space(guess_field,gRow,gCol,1);
