@@ -2,17 +2,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
-#include <curses.h>
 
-#define ESC '\033'
-
-struct guess{
-	char type;
-	int row;
-	int col;
-};
-
-void print_field_labels(char** field, int rows, int cols, int curr,int curc){
+void print_field_labels(char** field, int rows, int cols){
 	int i,j;
 	printf("   | ");
 	for(j=0;j<cols;++j){
@@ -27,17 +18,25 @@ void print_field_labels(char** field, int rows, int cols, int curr,int curc){
 	for(i=0;i<rows;++i){
 		printf("%3d|  ",i);
 		for(j=0;j<cols;++j){
-			if(i==curr && j==curc){
-				//turn bold
-				printf("%c[7m",ESC);
-			} 
 			if(field[i][j]=='0'){
-				printf("-");
+				printf("-  ");
+			} else {
+				printf("%c  ",field[i][j]);
+			}
+		}
+		printf("\n");
+	}
+}
+
+void print_field(char** field, int rows, int cols){
+	int i,j;
+	for(i=0;i<rows;++i){
+		for(j=0;j<cols;++j){
+			if(field[i][j]=='0'){
+				printf(" ");
 			} else {
 				printf("%c",field[i][j]);
 			}
-			printf("%c[0m",ESC);  
-			printf("  ");
 		}
 		printf("\n");
 	}
@@ -57,7 +56,6 @@ int check_win(char** field, char** guess_field, int rows, int cols){
 	}
 	return 0;
 }
-
 
 char** new_guess_field(char** field, int rows, int cols){
 	char** guess_field = (char**)malloc(sizeof(char*)*rows);
@@ -373,72 +371,10 @@ void free_field(char** field,int rows, int cols){
 	free(field);
 }
 
-struct guess get_guess(int rows, int cols){
-	struct guess g;
-	while(1){
-		printf("Enter your guess <g|f|u> <row> <col>: ");
-		scanf(" %c %d %d",&g.type,&g.row,&g.col);
-		if(g.row>=rows || g.col >= cols){
-			printf("\tGuess outside bounds!, guess again\n");
-			continue;
-		}
-		if(g.type!='f'&&g.type!='g'&&g.type!='u'){
-			printf("\tYou must select a flag type, g, f, or u\n(g)uess\t(f)lag\t(u)nflag\n");
-			continue;
-		}
-		return g;
-	}
-}
-
-struct guess get_guess_2(int rows,int cols, int gRow, int gCol){
-	struct guess g;
-	g.row = gRow;
-	g.col = gCol;
-
-	char ch;
-	while(TRUE){
-		ch = getch();
-		if(ch=='g' || ch=='f' || ch=='u'){
-			break;
-		}
-		if(ch == KEY_UP){
-			if (g.row == 0){
-				g.row=rows;
-			}
-			g.row--;
-		} else if(ch== KEY_RIGHT){
-			g.col++;
-			if(g.col==cols){
-				g.col=0;
-			}
-		} else if(ch == KEY_DOWN){
-			g.row++;
-			if(g.row==rows){
-				g.row = 0;
-			}
-		} else if(ch == KEY_LEFT){
-			if(g.col ==0){
-				g.col=cols;
-			}
-			g.col--;
-		}
-	}
-	g.type=ch;
-
-	return g;
-}
-
 int main(int argc, char* argv[]){
 	if(argc<4){
 		fprintf(stderr,"%s <rows> <cols> <mines>\n",argv[0]);
 		return 1;
-	}
-	int ncurses = argc > 4;
-	if(ncurses){
-		initscr();
-		raw();
-		keypad(stdscr,TRUE);
-		noecho();
 	}
 
 	srand(time(0));
@@ -453,24 +389,27 @@ int main(int argc, char* argv[]){
 	}
 	
 	int guesses_count=0;
-	struct guess g;
-	if(ncurses){
-		g = get_guess_2(rows,cols,0,0);
-	} else {
-		g= get_guess(rows,cols);
+guess:
+	printf("Enter your first guess (safe) <row> <col>: ");
+	int gRow,gCol;
+	char flag;
+	scanf("%d %d",&gRow,&gCol);
+	if(gRow>=rows || gCol >= cols){
+		printf("Guess outside bounds!, guess again\n");
+		goto guess;
 	}
 	guesses_count++;
 
-	char** field = new_field(rows,cols,mines,g.row,g.col);
+	char** field = new_field(rows,cols,mines,gRow,gCol);
 	number_field(field,rows,cols);
 
 	char** guess_field = new_guess_field(field,rows,cols);
 
-	int good_guess=guess_space(field,guess_field,rows,cols,g.row,g.col);
+	int good_guess=guess_space(field,guess_field,rows,cols,gRow,gCol);
 
 	int start_time=time(0);
 	while(good_guess){
-		print_field_labels(guess_field,rows,cols,g.row,g.col);
+		print_field_labels(guess_field,rows,cols);
 		int win = check_win(field,guess_field,rows,cols);
 		if(win==0){
 			printf("Yon won Charlie!\n");
@@ -478,38 +417,40 @@ int main(int argc, char* argv[]){
 			printf("Time: %d seconds\n",(int)(time(0)-start_time));
 			return 0;
 		}
-	if(ncurses){
-		g = get_guess_2(rows,cols,g.row,g.col);
-	} else {
-		g= get_guess(rows,cols);
-	}
-		if(g.type=='g'&&guess_field[g.row][g.col]=='@'){
+		printf("Enter your guess <g|f|u> <row> <col>: ");
+		scanf(" %c %d %d",&flag,&gRow,&gCol);
+		if(gRow>=rows || gCol >= cols){
+			printf("\tGuess outside bounds!, guess again\n");
+			continue;
+		}
+		if(flag!='f'&&flag!='g'&&flag!='u'){
+			printf("\tYou must select a flag type, g, f, or u\n(g)uess\t(f)lag\t(u)nflag\n");
+			continue;
+		}
+		if(flag=='g'&&guess_field[gRow][gCol]=='@'){
 			printf("\tLocation is flagged, choose another\n");
 			continue;
 		}
-		if(g.type=='f'){
-			if(guess_field[g.row][g.col]!='*'){
+		if(flag=='f'){
+			if(guess_field[gRow][gCol]!='*'){
 				printf("\tLocation uncovered or already flagged or uncovered, choose another\n");
 				continue;
 			}
-			flag_space(guess_field,g.row,g.col,1);
+			flag_space(guess_field,gRow,gCol,1);
 			continue;
 		}
-		if(g.type=='u'){
-			flag_space(guess_field,g.row,g.col,0);
+		if(flag=='u'){
+			flag_space(guess_field,gRow,gCol,0);
 			continue;
 		}
-		if(g.type=='g'){
-			good_guess = guess_space(field,guess_field,rows,cols,g.row,g.col);
+		if(flag=='g'){
+			good_guess = guess_space(field,guess_field,rows,cols,gRow,gCol);
 			guesses_count++;
 		}
 	}
 	printf("Boom.\n");
 	printf("Guesses: %d\n",guesses_count);
 	printf("Time: %d seconds\n",(int)(time(0)-start_time));
-	print_field_labels(field,rows,cols,g.row,g.col);
-	if(ncurses){
-		endwin();
-	}
+	print_field_labels(field,rows,cols);
 	return 1;
 }
