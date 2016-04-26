@@ -1,0 +1,28 @@
+100 100
+#test commetn
+point 255 255 255 0 0
+point 0 0 255 0 1
+point 255 0	0 1 0
+point 0 255 0 1 1
+#lines
+#down right
+line 255 0 0 0 0 50 100 
+#up left
+line 255 255 255 75 100 25 0 
+#down left
+line 0 255 0 0 100 50 0
+#up right
+line 0 0 255 25 100 75 0
+#right
+line 255 255 0 50 0 50 100
+#left
+line 255 0 255 60 100 60 0
+#up
+line 0 255 255 100 50 0 50
+#down
+line 255 255 255 0 75 100 75 
+#rects
+rect 77 0 0 20 20 50 30
+#fill
+fill 0 0 255 10 10
+edge
