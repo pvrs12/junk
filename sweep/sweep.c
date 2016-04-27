@@ -119,7 +119,7 @@ int count_adjacent_of(char** field, int rows, int cols, int row, int col, char c
 				count++;
 			}
 		}
-		if(field[row+1][col]=='m'){
+		if(field[row+1][col]==c || any){
 			count++;
 		}
 	} 
@@ -213,6 +213,8 @@ int chord(char** field, char** guess_field, int rows, int cols, int fRow, int fC
 	int count = count_adjacent_of(guess_field,rows,cols,fRow,fCol,'@');
 	int ret = 1;
 	//if the number of flaged == number on cell
+	printw("(%d,%d) c=%d\tf=%c\n",fRow,fCol,count,guess_field[fRow][fCol]);
+	refresh();
 	if(count+'0'==guess_field[fRow][fCol]){
 		//uncover adjacent squares
 		if(fRow!=0){
