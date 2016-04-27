@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
-#include <curses.h>
+#include <ncurses.h>
 
 #define ESC '\033'
 
@@ -12,6 +12,45 @@ struct guess{
 	int col;
 };
 
+int guess_space(char** field, char** guess_field, int rows, int cols, int fRow, int fCol);
+
+void print_field_labels_ncurses(char** field, int rows, int cols, int curr, int curc){
+	int i,j;
+	move(0,0);
+	printw("   | ");
+	for(j=0;j<cols;++j){
+		printw("%2d ",j);
+	}
+	printw("\n");
+	printw("---+-");
+	for(j=0;j<cols;++j){
+		printw("----");
+	}
+	printw("\n");
+	for(i=0;i<rows;++i){
+		printw("%3d|  ",i);
+		for(j=0;j<cols;++j){
+			if(i==curr && j==curc){
+				attron(A_REVERSE);
+			}
+			if(field == NULL){
+				printw("*");
+			} else {
+				if(field[i][j]=='0'){
+					printw("-");
+				} else {
+					printw("%c",field[i][j]);
+				}
+			}
+			attroff(A_REVERSE);
+			printw("  ");
+		}
+		printw("\n");
+	}
+	refresh();
+}
+
+//draws the field
 void print_field_labels(char** field, int rows, int cols, int curr,int curc){
 	int i,j;
 	printf("   | ");
@@ -28,13 +67,17 @@ void print_field_labels(char** field, int rows, int cols, int curr,int curc){
 		printf("%3d|  ",i);
 		for(j=0;j<cols;++j){
 			if(i==curr && j==curc){
-				//turn bold
+				//invert color
 				printf("%c[7m",ESC);
 			} 
-			if(field[i][j]=='0'){
-				printf("-");
+			if(field == NULL){
+				printf("*");
 			} else {
-				printf("%c",field[i][j]);
+				if(field[i][j]=='0'){
+					printf("-");
+				} else {
+					printf("%c",field[i][j]);
+				}
 			}
 			printf("%c[0m",ESC);  
 			printf("  ");
@@ -43,6 +86,62 @@ void print_field_labels(char** field, int rows, int cols, int curr,int curc){
 	}
 }
 
+int count_adjacent_of(char** field, int rows, int cols, int row, int col, char c){
+	//count anything if c==' '
+	int any=FALSE;
+	if(c==' '){
+		any=TRUE;
+	}
+	int count=0;
+	if(row!=0){
+		if(col!=0){
+			if(field[row-1][col-1]==c || any){
+				count++;	
+			}
+		}
+		if(col!=cols-1){
+			if(field[row-1][col+1]==c || any){
+				count++;
+			}
+		}
+		if(field[row-1][col]==c || any){
+			count++;
+		}
+	} 
+	if(row != rows-1){
+		if(col!=0){
+			if(field[row+1][col-1]==c || any){
+				count++;	
+			}
+		}
+		if(col!=cols-1){
+			if(field[row+1][col+1]==c || any){
+				count++;
+			}
+		}
+		if(field[row+1][col]=='m'){
+			count++;
+		}
+	} 
+	if(col!=0){
+		if(field[row][col-1]==c || any){
+			count++;
+		}
+	}
+	if(col!=cols-1){
+		if(field[row][col+1]==c || any){
+			count++;
+		}
+	}
+	return count;
+}
+
+int count_adjacent(char** field, int rows, int cols, int row, int col){
+	return count_adjacent_of(field,rows,cols,row,col,' ');
+}
+
+
+//checks if all non-mine squares are uncovered
 int check_win(char** field, char** guess_field, int rows, int cols){
 	int i,j;
 	for(i=0;i<rows;++i){
@@ -71,14 +170,18 @@ char** new_guess_field(char** field, int rows, int cols){
 	return guess_field;
 }
 
+//recursive flood fill of adjacent non-mine spaces from spaces touching 0 mines
 void uncover_others(char** field,char** guess_field, int rows, int cols, int fRow, int fCol){
+	//if already uncovered do nothing
 	if(guess_field[fRow][fCol]!='*'){
 		return;
 	}
+	//uncover this cell
 	guess_field[fRow][fCol]=field[fRow][fCol];
 	if(field[fRow][fCol]!='0'){
 		return;
 	}
+	//recursively uncover all 8 surrounding cells
 	if(fRow>0){
 		uncover_others(field,guess_field,rows,cols,fRow-1,fCol);
 		if(fCol>0){
@@ -106,14 +209,69 @@ void uncover_others(char** field,char** guess_field, int rows, int cols, int fRo
 	return;
 }
 
+int chord(char** field, char** guess_field, int rows, int cols, int fRow, int fCol){
+	int count = count_adjacent_of(guess_field,rows,cols,fRow,fCol,'@');
+	int ret = 1;
+	//if the number of flaged == number on cell
+	if(count+'0'==guess_field[fRow][fCol]){
+		//uncover adjacent squares
+		if(fRow!=0){
+			if(fCol!=0){
+				if(guess_field[fRow-1][fCol-1]=='*'){
+					ret = !ret ? ret:guess_space(field,guess_field,rows,cols,fRow-1,fCol-1);			
+				}
+			}
+			if(fCol!=cols-1){
+				if(guess_field[fRow-1][fCol+1]=='*'){
+					ret = !ret ? ret:guess_space(field,guess_field,rows,cols,fRow-1,fCol+1);			
+				}
+			}
+			if(guess_field[fRow-1][fCol]=='*'){
+				ret = !ret ? ret:guess_space(field,guess_field,rows,cols,fRow-1,fCol);
+			}
+		}
+		if(fRow!=rows-1){
+			if(fCol!=0){
+				if(guess_field[fRow+1][fCol-1]=='*'){
+					ret = !ret ? ret:guess_space(field,guess_field,rows,cols,fRow+1,fCol-1);			
+				}
+			}
+			if(fCol!=cols-1){
+				if(guess_field[fRow+1][fCol+1]=='*'){
+					ret = !ret ? ret:guess_space(field,guess_field,rows,cols,fRow+1,fCol+1);			
+				}
+			}
+			if(guess_field[fRow+1][fCol]=='*'){
+				ret = !ret ? ret:guess_space(field,guess_field,rows,cols,fRow+1,fCol);
+			}
+		}
+		if(fCol!=0){
+			if(guess_field[fRow][fCol-1]=='*'){
+				ret = !ret ? ret:guess_space(field,guess_field,rows,cols,fRow,fCol-1);
+			}
+		}
+		if(fCol!=cols-1){
+			if(guess_field[fRow][fCol+1]=='*'){
+				ret = !ret ? ret:guess_space(field,guess_field,rows,cols,fRow,fCol+1);
+			}
+		}
+	}	
+	return ret;
+}
+
 int guess_space(char** field, char** guess_field, int rows, int cols, int fRow, int fCol){
 	if(field[fRow][fCol]=='m'){
 		//mine
 		return 0;
 	} else if(field[fRow][fCol]!='0') {
-		//number
-		guess_field[fRow][fCol]=field[fRow][fCol];
-		return 1;
+		//if guess is on an uncovered number, chord
+		if(guess_field[fRow][fCol]==field[fRow][fCol]){
+			return chord(field,guess_field,rows,cols,fRow,fCol);	
+		} else {
+			//number
+			guess_field[fRow][fCol]=field[fRow][fCol];
+			return 1;
+		}
 	} else {
 		uncover_others(field,guess_field,rows,cols,fRow,fCol);
 		return 1;
@@ -128,6 +286,8 @@ void flag_space(char** guess_field, int fRow, int fCol, int flagSet){
 	}
 }
 
+//generate a new mine field pased on the first row/col guessed
+//this is because the first guess is always safe
 char** new_field(int rows, int cols, int mines,int fRow,int  fCol){
 	char** field = (char**)malloc(sizeof(char*)*rows);
 	int i,j;
@@ -174,192 +334,17 @@ char** new_field(int rows, int cols, int mines,int fRow,int  fCol){
 	return field;
 }
 
+//fill in the non-mined squares with the number of adjacent mines
 void number_field(char** field, int rows, int cols){
 	int r,c;
 	r=0;
-	for(c=1;c<cols-1;++c){
-		if(field[r][c]=='m'){
-			continue;
-		}
-		int mc = 0;
-		if(field[r][c-1]=='m'){
-			mc++;
-		}
-		if(field[r][c+1]=='m'){
-			mc++;
-		}
-		if(field[r+1][c-1]=='m'){
-			mc++;
-		}
-		if(field[r+1][c]=='m'){
-			mc++;
-		}
-		if(field[r+1][c+1]=='m'){
-			mc++;
-		}
-		field[r][c]=mc+'0';
-	}
-	c=0;
-	for(r=1;r<rows-1;++r){
-		if(field[r][c]=='m'){
-			continue;
-		}
-		int mc=0;
-		if(field[r-1][c]=='m'){
-			mc++;
-		}
-		if(field[r+1][c]=='m'){
-			mc++;
-		}
-		if(field[r-1][c+1]=='m'){
-			mc++;
-		}
-		if(field[r][c+1]=='m'){
-			mc++;
-		}
-		if(field[r+1][c+1]=='m'){
-			mc++;
-		}
-		field[r][c]=mc+'0';
-	}
-	r=rows-1;
-	for(c=1;c<cols-1;++c){
-		if(field[r][c]=='m'){
-			continue;
-		}
-		int mc=0;
-		if(field[r-1][c-1]=='m'){
-			mc++;
-		}
-		if(field[r-1][c]=='m'){
-			mc++;
-		}
-		if(field[r-1][c+1]=='m'){
-			mc++;
-		}
-		if(field[r][c-1]=='m'){
-			mc++;
-		}
-		if(field[r][c+1]=='m'){
-			mc++;
-		}
-		field[r][c]=mc+'0';
-	}
-	c=cols-1;
-	for(r=1;r<rows-1;++r){
-		if(field[r][c]=='m'){
-			continue;
-		}
-		int mc=0;
-		if(field[r-1][c]=='m'){
-			mc++;
-		}
-		if(field[r+1][c]=='m'){
-			mc++;
-		}
-		if(field[r-1][c-1]=='m'){
-			mc++;
-		}
-		if(field[r][c-1]=='m'){
-			mc++;
-		}
-		if(field[r+1][c-1]=='m'){
-			mc++;
-		}
-		field[r][c]=mc+'0';
-	}
-	//corners
-	//top left
-	if(field[0][0]!='m'){
-		int mc=0;
-		if(field[0][1]=='m'){
-			mc++;
-		}
-		if(field[1][1]=='m'){
-			mc++;
-		}
-		if(field[1][0]=='m'){
-			mc++;
-		}
-		field[0][0]=mc+'0';
-	}
-
-	//bottom right
-	if(field[rows-1][0]!='m'){
-		int mc=0;
-		if(field[rows-2][0]=='m'){
-			mc++;
-		}
-		if(field[rows-1][1]=='m'){
-			mc++;
-		}
-		if(field[rows-2][1]=='m'){
-			mc++;
-		}
-		field[rows-1][0]=mc+'0';
-	}
-
-	//top left
-	if(field[0][cols-1]!='m'){
-		int mc=0;
-		if(field[0][cols-2]=='m'){
-			mc++;
-		}
-		if(field[1][cols-1]=='m'){
-			mc++;
-		}
-		if(field[1][cols-2]=='m'){
-			mc++;
-		}
-		field[0][cols-1]=mc+'0';
-	}
-
-	//bottom right
-	if(field[rows-1][cols-1]!='m'){
-		int mc=0;
-		if(field[rows-2][cols-1]=='m'){
-			mc++;
-		}
-		if(field[rows-1][cols-2]=='m'){
-			mc++;
-		}
-		if(field[rows-2][cols-2]=='m'){
-			mc++;
-		}
-		field[rows-1][cols-1]=mc+'0';
-	}
-	
-	//main field
-	for(r=1;r<rows-1;++r){
-		for(c=1;c<cols-1;++c){
+	for(r=0;r<rows;++r){
+		for(c=0;c<cols;++c){
 			if(field[r][c]=='m'){
 				continue;
 			}
-			int mc = 0;
-			if(field[r-1][c-1]=='m'){
-				mc++;
-			}
-			if(field[r-1][c]=='m'){
-				mc++;
-			}
-			if(field[r-1][c+1]=='m'){
-				mc++;
-			}
-			if(field[r][c-1]=='m'){
-				mc++;
-			}
-			if(field[r][c+1]=='m'){
-				mc++;
-			}
-			if(field[r+1][c-1]=='m'){
-				mc++;
-			}
-			if(field[r+1][c]=='m'){
-				mc++;
-			}
-			if(field[r+1][c+1]=='m'){
-				mc++;
-			}
+			int mc= count_adjacent_of(field,rows,cols,r,c,'m');
+			//printf("(%d,%d)=%d\n",r,c,mc);
 			field[r][c]=mc+'0';
 		}
 	}
@@ -390,33 +375,42 @@ struct guess get_guess(int rows, int cols){
 	}
 }
 
-struct guess get_guess_2(int rows,int cols, int gRow, int gCol){
+struct guess get_guess_ncurses(int rows,int cols, int gRow, int gCol, char** field){
 	struct guess g;
 	g.row = gRow;
 	g.col = gCol;
 
 	char ch;
 	while(TRUE){
+		print_field_labels_ncurses(field,rows,cols,g.row,g.col);
+		printw("Use wasd to move. Press g/f/u/q to guess/flag/unflag/quit\n");
 		ch = getch();
+		if(ch=='q'){
+			g.type=ch;
+			return g;
+		}
+		if(ch==' '){
+			ch='g';
+		}
 		if(ch=='g' || ch=='f' || ch=='u'){
 			break;
 		}
-		if(ch == KEY_UP){
+		if(ch == 'w'){
 			if (g.row == 0){
 				g.row=rows;
 			}
 			g.row--;
-		} else if(ch== KEY_RIGHT){
+		} else if(ch== 'd'){
 			g.col++;
 			if(g.col==cols){
 				g.col=0;
 			}
-		} else if(ch == KEY_DOWN){
+		} else if(ch == 's'){
 			g.row++;
 			if(g.row==rows){
 				g.row = 0;
 			}
-		} else if(ch == KEY_LEFT){
+		} else if(ch == 'a'){
 			if(g.col ==0){
 				g.col=cols;
 			}
@@ -426,6 +420,12 @@ struct guess get_guess_2(int rows,int cols, int gRow, int gCol){
 	g.type=ch;
 
 	return g;
+}
+
+void stop_ncurses(int ncurses){
+	if(ncurses){
+		endwin();
+	}
 }
 
 int main(int argc, char* argv[]){
@@ -454,42 +454,78 @@ int main(int argc, char* argv[]){
 	
 	int guesses_count=0;
 	struct guess g;
+first:
 	if(ncurses){
-		g = get_guess_2(rows,cols,0,0);
+		g = get_guess_ncurses(rows,cols,0,0,NULL);
 	} else {
+		print_field_labels(NULL,rows,cols,-1,-1);
 		g= get_guess(rows,cols);
 	}
+	if(g.type != 'g'){
+		if(ncurses){
+			printw("Your first choice must be a guess! (You can't lose on the first pick!)\n");
+			refresh();
+		} else {
+			printf("Your first choice must be a guess! (You can't lose on the first pick!)\n");
+		}
+		goto first;
+	}
 	guesses_count++;
-
 	char** field = new_field(rows,cols,mines,g.row,g.col);
 	number_field(field,rows,cols);
 
 	char** guess_field = new_guess_field(field,rows,cols);
 
 	int good_guess=guess_space(field,guess_field,rows,cols,g.row,g.col);
-
 	int start_time=time(0);
+
+	int win = check_win(field,guess_field,rows,cols);
+	if(win==0){
+		stop_ncurses(ncurses);
+		print_field_labels(field,rows,cols,g.row,g.col);
+		printf("Yon won Charlie!\n");
+		printf("Guesses: %d\n",guesses_count);
+		printf("Time: %d seconds\n",(int)(time(0)-start_time));
+		return 0;
+	}
+
 	while(good_guess){
-		print_field_labels(guess_field,rows,cols,g.row,g.col);
-		int win = check_win(field,guess_field,rows,cols);
+		if(ncurses){
+			print_field_labels_ncurses(guess_field,rows,cols,g.row,g.col);
+		} else {
+			print_field_labels(guess_field,rows,cols,g.row,g.col);
+		}
+		win = check_win(field,guess_field,rows,cols);
 		if(win==0){
+			stop_ncurses(ncurses);
+			print_field_labels(field,rows,cols,g.row,g.col);
 			printf("Yon won Charlie!\n");
 			printf("Guesses: %d\n",guesses_count);
 			printf("Time: %d seconds\n",(int)(time(0)-start_time));
 			return 0;
 		}
-	if(ncurses){
-		g = get_guess_2(rows,cols,g.row,g.col);
-	} else {
-		g= get_guess(rows,cols);
-	}
-		if(g.type=='g'&&guess_field[g.row][g.col]=='@'){
-			printf("\tLocation is flagged, choose another\n");
+		if(ncurses){
+			g = get_guess_ncurses(rows,cols,g.row,g.col,guess_field);
+		} else {
+			g= get_guess(rows,cols);
+		}
+		if(g.type=='g' && guess_field[g.row][g.col]=='@'){
+			if(ncurses){
+				printw("Location is flagged, choose another\n");
+				refresh();
+			} else {
+				printf("\tLocation is flagged, choose another\n");
+			}
 			continue;
 		}
 		if(g.type=='f'){
 			if(guess_field[g.row][g.col]!='*'){
-				printf("\tLocation uncovered or already flagged or uncovered, choose another\n");
+				if(ncurses){
+					printw("Location uncovered or already flagged or uncovered, choose another\n");
+					refresh();
+				} else {
+					printf("\tLocation uncovered or already flagged or uncovered, choose another\n");
+				}	
 				continue;
 			}
 			flag_space(guess_field,g.row,g.col,1);
@@ -503,13 +539,15 @@ int main(int argc, char* argv[]){
 			good_guess = guess_space(field,guess_field,rows,cols,g.row,g.col);
 			guesses_count++;
 		}
+		if(g.type=='q'){
+			stop_ncurses(ncurses);
+			exit(0);
+		}
 	}
+	stop_ncurses(ncurses);
+	print_field_labels(field,rows,cols,g.row,g.col);
 	printf("Boom.\n");
 	printf("Guesses: %d\n",guesses_count);
 	printf("Time: %d seconds\n",(int)(time(0)-start_time));
-	print_field_labels(field,rows,cols,g.row,g.col);
-	if(ncurses){
-		endwin();
-	}
-	return 1;
+	return 0;
 }
