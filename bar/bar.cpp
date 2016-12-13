@@ -20,6 +20,7 @@ int main(){
 		g[1][1]=1;
 		char button;
 		string trash;
+		draw_grid(g);
 		while(true){
 			cin>>button;
 			getline(cin,trash);
