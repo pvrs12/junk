@@ -123,8 +123,9 @@ int main(int argc, char* argv[]){
 		}
 		points.push_back(std::make_pair(e.col, std::make_pair(x, y)));
 
-		x = e.apply_x(x,y);
+		double tx = e.apply_x(x,y);
 		y = e.apply_y(x,y);
+		x = tx;
 	}
 	std::vector<std::vector<color>> image(WIDTH + 1, std::vector<color>(HEIGHT + 1, color(255, 255, 255)));
 
