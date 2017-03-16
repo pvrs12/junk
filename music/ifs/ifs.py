@@ -1,6 +1,7 @@
 """Generate a simple IFS image"""
 
 import numpy
+from operator import itemgetter
 
 RES = 10000
 WIDTH = 1000
@@ -15,8 +16,10 @@ class equation:
         self.e = 0
         self.g = 0
 
-    def apply_e(self, x, y):
-        return (a * x + b * y + e, c * y + d * y + f, )
+    def apply_x(self, x, y):
+        return self.a * x + self.b * y + self.e
+    def apply_y(self, x, y):
+        return self.c * y + self.d * y + self.f
 
 def scale(x, in_min, in_max, out_min, out_max):
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
@@ -36,14 +39,17 @@ def main():
     weights = []
     points = []
     while True:
+        line = input().strip()
+        lineS = line.split()
+
         e = equation()
-        e.a = float(input())
-        e.b = float(input())
-        e.c = float(input())
-        e.d = float(input())
-        e.e = float(input())
-        e.f = float(input())
-        p = float(input())
+        e.a = float(lineS[0])
+        e.b = float(lineS[1])
+        e.c = float(lineS[2])
+        e.d = float(lineS[3])
+        e.e = float(lineS[4])
+        e.f = float(lineS[5])
+        p = float(lineS[6])
 
         if p == 0:
             break
@@ -65,13 +71,27 @@ def main():
         min_y = min(y, min_y)
         max_y = max(y, max_y)
 
+        #points.append((int(x*100)/100,int(y*100)/100,))
         points.append((x,y,))
-        x, y = e.apply_y(x, y)
+        tx = x
+        x = float(e.apply_x(x, y))
+        y = float(e.apply_y(tx, y))
 
-    image = [[(255, 255, 255,)] * WIDTH] * HEIGHT
+    # ps = sorted(points, key=itemgetter(1,0))
+    # curX = ps[0][0]
+    # s = ""
+    # for p in ps:
+        # if(p[1] != curX):
+            # print(s)
+            # s=""
+            # curX = p[1]
+        # s+="({},{})".format(p[0],p[1])
+    
+    image = [[(255, 255, 255,)] * (WIDTH+1)] * (HEIGHT+1)
     for point in points:
         image_x = int(scale(point[0] - min_x, 0, max_x - min_x, 0, WIDTH))
         image_y = int(scale(point[1] - min_y, 0, max_y - min_y, 0, HEIGHT))
+        #print("({},{})\t({},{})".format(point[0],point[1],image_x,image_y))
 
         image[image_x][image_y] = (0,0,0,)
     write_pbm(image)
