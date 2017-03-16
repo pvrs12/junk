@@ -1,5 +1,7 @@
 .PHONY: all
 .PHONY: clean
+.PHONY: run
+.PHONY: run_convert
 
 SRC_DIR = src
 INCLUDE_DIRS =
@@ -17,6 +19,7 @@ OBJ_FILES = $(patsubst %.cpp,%.o,$(SRC_FILES))
 OBJ = $(patsubst %,$(OBJECT_DIR)/%,$(OBJ_FILES))
 
 BIN = $(BIN_DIR)/$(BIN_NAME)
+RUN_ARGS = 2500000 < inputs/fern > fern.pbm
 
 CXX = g++
 CXXFLAGS = -std=c++11 $(INCLUDES)
@@ -36,8 +39,15 @@ $(OBJ): $(SRC) $(OBJECT_DIR)
 $(BIN): $(OBJ) $(BIN_DIR)
 	$(CXX) -o $@ $(OBJ) $(LINKFLAGS)
 
-run: $(BIN)
-	$(BIN)
+fern.pbm: $(BIN)
+	$(BIN) $(RUN_ARGS)
+
+run: fern.pbm
+
+fern.png: fern.pbm
+	convert fern.pbm fern.png
+
+run_convert: fern.png
 
 clean:
 	rm -rf obj
