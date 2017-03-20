@@ -1,0 +1,47 @@
+.PHONY: all
+.PHONY: clean
+
+SRC_DIR = src
+INCLUDE_DIRS =
+OBJECT_DIR = obj
+LIBRARY_DIRS = -Llib
+BIN_DIR = bin
+
+BIN_NAME = <>
+SRC_FILES = <>
+LIBRARIES = 
+
+SRC = $(patsubst %,$(SRC_DIR)/%,$(SRC_FILES))
+
+OBJ_FILES = $(patsubst %.cpp,%.o,$(SRC_FILES))
+OBJ = $(patsubst %,$(OBJECT_DIR)/%,$(OBJ_FILES))
+
+BIN = $(BIN_DIR)/$(BIN_NAME)
+
+CXX = g++
+CXXFLAGS = -std=c++11 $(INCLUDES)
+LINKFLAGS = $(LIBRARY_DIRS) $(LIBRARIES)
+
+AR = ar
+ARFLAGS = rvs
+
+all: $(BIN)
+
+$(OBJECT_DIR):
+	mkdir $(OBJECT_DIR)
+
+$(BIN_DIR):
+	mkdir $(BIN_DIR)
+
+$(SRC_DIR):
+	mkdir $(SRC_DIR)
+
+$(OBJ): $(SRC) $(OBJECT_DIR)
+	$(CXX) -o $(OBJ) -c $(SRC) $(CXXFLAGS)
+
+$(BIN): $(OBJ) $(BIN_DIR)
+	$(AR) $(ARFLAGS) $(BIN) $(OBJ)
+
+clean:
+	rm -rf obj
+	rm -rf bin
