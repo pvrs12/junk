@@ -1,6 +1,4 @@
-.PHONY: all
-.PHONY: clean
-.PHONY: run
+.PHONY: all clean run lib
 
 SRC_DIR = src
 INCLUDE_DIRS =
@@ -35,13 +33,18 @@ $(BIN_DIR):
 $(SRC_DIR):
 	mkdir $(SRC_DIR)
 
-$(OBJECT_DIR)/%.o: $(SRC_DIR)/%.cpp $(OBJECT_DIR) $(BIN_DIR)
+$(OBJECT_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJECT_DIR)
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
-$(BIN): $(OBJ)
+$(BIN): $(OBJ) | $(BIN_DIR)
 	$(CXX) -o $@ $^ $(LINKFLAGS)
 
-run:  $(BIN)
+$(BIN).a: $(OBJ) | $(BIN_DIR)
+	$(AR) $(ARFLAGS) $(BIN).a $^
+
+lib: $(BIN).a
+
+run: $(BIN)
 	$(BIN) $(RUN_ARGS)
 
 clean:
