@@ -8,8 +8,8 @@ OBJECT_DIR = obj
 LIBRARY_DIRS = 
 BIN_DIR = bin
 
-OBJ_FILES = <>
-BIN_NAME = <>
+OBJ_FILES = test.o test2.o
+BIN_NAME = test
 LIBRARIES = 
 
 OBJ = $(patsubst %, $(OBJECT_DIR)/%,$(OBJ_FILES))
