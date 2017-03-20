@@ -1,53 +1,48 @@
 .PHONY: all
 .PHONY: clean
 .PHONY: run
-.PHONY: run_convert
 
 SRC_DIR = src
 INCLUDE_DIRS =
 OBJECT_DIR = obj
-LIBRARY_DIRS = -Llib
+LIBRARY_DIRS = 
 BIN_DIR = bin
 
+OBJ_FILES = ifs.o
 BIN_NAME = ifs
-SRC_FILES = ifs.cpp
 LIBRARIES = 
 
-SRC = $(patsubst %,$(SRC_DIR)/%,$(SRC_FILES))
-
-OBJ_FILES = $(patsubst %.cpp,%.o,$(SRC_FILES))
-OBJ = $(patsubst %,$(OBJECT_DIR)/%,$(OBJ_FILES))
+OBJ = $(patsubst %, $(OBJECT_DIR)/%,$(OBJ_FILES))
 
 BIN = $(BIN_DIR)/$(BIN_NAME)
-RUN_ARGS = 2500000 < inputs/fern > fern.pbm
+RUN_ARGS = 100000 < inputs/fern > outputs/fern.pbm
 
 CXX = g++
 CXXFLAGS = -std=c++11 $(INCLUDES)
 LINKFLAGS = $(LIBRARY_DIRS) $(LIBRARIES)
 
+AR = ar
+ARFLAGS = rvs
+
 all: $(BIN)
 
 $(OBJECT_DIR):
-	mkdir obj
+	mkdir $(OBJECT_DIR)
 
 $(BIN_DIR):
-	mkdir bin
+	mkdir $(BIN_DIR)
 
-$(OBJ): $(SRC) $(OBJECT_DIR)
-	$(CXX) -o $(OBJ) -c $(SRC) $(CXXFLAGS)
+$(SRC_DIR):
+	mkdir $(SRC_DIR)
 
-$(BIN): $(OBJ) $(BIN_DIR)
-	$(CXX) -o $@ $(OBJ) $(LINKFLAGS)
+$(OBJECT_DIR)/%.o: $(SRC_DIR)/%.cpp $(OBJECT_DIR) $(BIN_DIR)
+	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
-fern.pbm: $(BIN)
+$(BIN): $(OBJ)
+	$(CXX) -o $@ $^ $(LINKFLAGS)
+
+run:  $(BIN)
 	$(BIN) $(RUN_ARGS)
-
-run: fern.pbm
-
-fern.png: fern.pbm
-	convert fern.pbm fern.png
-
-run_convert: fern.png
 
 clean:
 	rm -rf obj

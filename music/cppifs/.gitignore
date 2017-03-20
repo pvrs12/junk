@@ -1,5 +1,5 @@
 obj
 bin
-outputs
+outputs/*
 *.pbm
 *.png
