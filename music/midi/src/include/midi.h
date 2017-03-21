@@ -5,6 +5,9 @@
 
 #define TYPE_LEN 4
 
+///Converts a Variable-length quantity to an integer
+uint32_t varlen_to_int(char* var);
+
 struct MidiChunk {
 	char type[TYPE_LEN];
 	uint32_t length;
