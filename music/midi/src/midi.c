@@ -3,6 +3,7 @@
 #include <malloc.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 uint32_t varlen_to_int (char* var) {
 	uint32_t val = 0;
@@ -17,8 +18,28 @@ uint32_t varlen_to_int (char* var) {
 	return val;	
 }
 
-char* int_to_varlen(uint32_t val)	{
-	
+char* int_to_varlen(uint32_t val, size_t* _size)	{
+	uint32_t val2 = val;
+	int count = 0;
+	//determine the necessary size of the variable length quantity
+	while(val2>>=1){
+		count++;
+	}
+
+	size_t size = ceil(count / 7.0);
+	char* var = malloc(sizeof(char) * size);
+	if(_size){
+		(*_size) = size;
+	}
+
+	for(int i = 0; i < size; ++i){
+		var[size - i - 1] = val & 0x7F;
+		if(i){
+			var[size - i - 1] |= 0x80;
+		}
+		val >>= 7;
+	}
+	return var;
 }
 
 void new_midichunk(struct MidiChunk* chunk, char* type, uint32_t length, char* data){
@@ -48,23 +69,12 @@ void free_midi(struct Midi* midi){
 
 #include <stdio.h>
 int main(){
-	/*for(int i=0;i<=0x7F;++i){*/
-		/*char c[1];*/
-		/*c[0] = i;*/
-		/*uint32_t len = varlen_to_int(c);*/
-		/*printf("var = %x\tlen = %x\n", i, len);*/
-	/*}*/
-	/*printf("===============\n");*/
-	/*for(int i=0x80;i<=0xFF;++i){*/
-		/*for(int j=0;j<=0x7F;++j){*/
-			/*char c[2];*/
-			/*c[0] = i;*/
-			/*c[1] = j;*/
-			/*uint32_t len = varlen_to_int(c);*/
-			/*printf("var = %x%x\tlen = %x\n", i, j, len);*/
-		/*}*/
-	/*}*/
-	char num[3] = {0xBD, 0x84, 0x40};
+	size_t size;
+	char* num = int_to_varlen(0x0FFFFFFF, &size);
 	int len = varlen_to_int(num);
-	printf("%x %x %x\t%x\n", num[0], num[1], num[2], len);
+	for(int i=0;i<size;++i){
+		printf("%hhx ",num[i]);
+	}
+	printf("\t|\t%x\n", len);
+	free(num);
 }

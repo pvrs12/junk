@@ -8,7 +8,7 @@ BIN_DIR = bin
 
 OBJ_FILES = midi.o
 BIN_NAME = midi
-LIBRARIES = 
+LIBRARIES = -lm
 
 OBJ = $(patsubst %, $(OBJECT_DIR)/%,$(OBJ_FILES))
 
