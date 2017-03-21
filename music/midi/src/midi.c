@@ -5,6 +5,7 @@
 #include <string.h>
 #include <math.h>
 
+//vim:startfold
 uint32_t varlen_to_int (char* var) {
 	uint32_t val = 0;
 	while(1) {
@@ -17,7 +18,9 @@ uint32_t varlen_to_int (char* var) {
 	}
 	return val;	
 }
+//vim:endfold
 
+//vim:startfold
 char* int_to_varlen(uint32_t val, size_t* _size)	{
 	uint32_t val2 = val;
 	int count = 0;
@@ -41,6 +44,7 @@ char* int_to_varlen(uint32_t val, size_t* _size)	{
 	}
 	return var;
 }
+//vim:endfold
 
 void new_midichunk(struct MidiChunk* chunk, char* type, uint32_t length, char* data){
 	strncpy(chunk->type,type,TYPE_LEN);
