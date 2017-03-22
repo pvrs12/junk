@@ -24,7 +24,8 @@ void free_midichunk(struct MidiChunk* chunk);
 
 struct Midi {
 	uint32_t chunk_len;
-	struct MidiChunk* chunks;
+	//array of MidiChunk*
+	struct MidiChunk** chunks;
 };
 
 void new_midi(struct Midi* midi, int tracks);
@@ -38,7 +39,7 @@ struct MidiHeaderChunk {
 	uint16_t division;
 };
 
-void new_midi_header(struct MidiHeaderChunk* header, uint32_t length, uint16_t format, uint16_t, tracks, uint16_t division);
+void new_midi_header(struct MidiHeaderChunk* header, uint32_t length, uint16_t format, uint16_t tracks, uint16_t division);
 
 struct MidiTrackChunk {
 	uint32_t length;
@@ -47,7 +48,7 @@ struct MidiTrackChunk {
 	char* event;
 };
 
-void write_midi(Midi* m, FILE* f);
+void write_midi(struct Midi* m, FILE* f);
 
 //www.personal.kent.edu/~sbirch/Music_Production/MP-II/MIDI/midi_file_format.htm
 

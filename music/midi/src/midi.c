@@ -20,7 +20,7 @@ uint32_t varlen_to_int (char* var, size_t* size) {
 		_size++;
 	}
 	if(size){
-		(*size) = _size
+		(*size) = _size;
 	}
 	return val;	
 }
@@ -67,12 +67,12 @@ void new_midi(struct Midi* midi, int tracks) {
 
 void free_midi(struct Midi* midi){
 	for(int i = 0; i < midi->chunk_len;++i){
-		free_midichunk(&midi->chunks[i]);
+		free_midichunk(midi->chunks[i]);
 	}
 	free(midi->chunks);
 }
 
-void new_midi_header(struct MidiHeaderChunk* header, uint32_t length, uint16_t format, uint16_t, tracks, uint16_t division){
+void new_midi_header(struct MidiHeaderChunk* header, uint32_t length, uint16_t format, uint16_t tracks, uint16_t division){
 	header->length = length;
 
 	header->format = format;
@@ -80,20 +80,20 @@ void new_midi_header(struct MidiHeaderChunk* header, uint32_t length, uint16_t f
 	header->division = division;
 }
 
-void write_midi(Midi* midi, FILE* f) {
-	for(uint32_t i = 0; i < chunk_len; ++i){
-		MidiChunk* chunk = midi->chunks[i];
+void write_midi(struct Midi* midi, FILE* f) {
+	for(uint32_t i = 0; i < midi->chunk_len; ++i){
+		struct MidiChunk* chunk = midi->chunks[i];
 		char type_c[4] = {'M','T','h','d'};
 		fwrite(chunk->type, sizeof(char), 4, f);
 		fwrite(&chunk->length, sizeof(uint32_t), 1, f);
 		if(strncmp(chunk->type, type_c, 4) == 0){
-			MidiHeaderChunk* header = (MidiHeaderChunk*) chunk->chunk;
+			struct MidiHeaderChunk* header = (struct MidiHeaderChunk*) chunk->chunk;
 			fwrite(&header->format, sizeof(uint16_t), 1, f);
 			fwrite(&header->tracks, sizeof(uint16_t), 1, f);
 			fwrite(&header->division, sizeof(uint16_t), 1, f);
 		} else {
-			MidiTrackChunk* track = (MidiTrackChunk*) chunk->chunk;
-			uint32_t size;
+			struct MidiTrackChunk* track = (struct MidiTrackChunk*) chunk->chunk;
+			size_t size;
 			char* v = int_to_varlen(track->delta_time, &size);
 			fwrite(v, sizeof(char), size, f);
 			fwrite(v, sizeof(char), chunk->length - size, f);
@@ -104,25 +104,28 @@ void write_midi(Midi* midi, FILE* f) {
 int main(){
 	size_t size;
 	char* num = int_to_varlen(0x0FFFFFFF, &size);
-	int len = varlen_to_int(num);
+	size_t read_size;
+	int len = varlen_to_int(num, &read_size);
 	for(int i=0;i<size;++i){
 		printf("%hhx ",num[i]);
 	}
 	printf("\t|\t%x\n", len);
 	free(num);
 
-	/*FILE* f = fopen("test.mid", "wb");*/
-	/*Midi* m = malloc(sizeof(struct Midi));*/
-	/*new_midi(m, 1);*/
-	/*m->chunks[0] = malloc(sizeof(struct MidiChunk));*/
-	/*char type[4] = {'M','T','h','d'};*/
-	/*new_midichunk(m->chunks[0], type, 6);*/
-	/*MidiHeaderChunk header = malloc(sizeof(struct MidiHeaderChunk));*/
-	/*new_midi_header(header, 6, 0, 1, 0x0078);*/
-	/*header->length = m->chunks[0]->length;*/
-	/*m->chunks[0]->chunk = header;*/
+	FILE* f = fopen("test.mid", "wb");
+	struct Midi* m = malloc(sizeof(struct Midi));
+	new_midi(m, 1);
+	m->chunks[0] = malloc(sizeof(struct MidiChunk));
+	char type[4] = {'M','T','h','d'};
+	new_midichunk(m->chunks[0], type, 6);
+	struct MidiHeaderChunk* header = malloc(sizeof(struct MidiHeaderChunk));
+	new_midi_header(header, 6, 0, 1, 0x0078);
+	header->length = m->chunks[0]->length;
+	m->chunks[0]->chunk = header;
 
-	/*m->chunks[1] = malloc(sizeof(struct MidiChunk));*/
-	/*type = {'M','T','h','d'};*/
-	/*new_midichunk(m->chunks[1], */
+	m->chunks[1] = malloc(sizeof(struct MidiChunk));
+	//turn it into a track
+	type[2]='r';
+	type[3]='k';
+	new_midichunk(m->chunks[1], type, <somefuckinsize>);
 }
