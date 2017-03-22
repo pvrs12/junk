@@ -58,16 +58,27 @@ void new_midichunk(struct MidiChunk* chunk, char* type, uint32_t length){
 }
 
 void free_midichunk(struct MidiChunk* chunk){
+	char type_c[4] = {'M','T','h','d'};
+	if(strncmp(chunk->type, type_c, 4) == 0){
+		struct MidiHeaderChunk* header = (struct MidiHeaderChunk*) chunk->chunk;
+		free_midi_header(header);
+		free(header);
+	} else {
+		struct MidiTrackChunk* track = (struct MidiTrackChunk*) chunk->chunk;
+		free_midi_track(track);
+		free(track);
+	}
 }
 
 void new_midi(struct Midi* midi, int tracks) {
 	midi->chunk_len = tracks + 1;
-	midi->chunks = malloc(sizeof(struct MidiChunk) * midi->chunk_len);
+	midi->chunks = malloc(sizeof(struct MidiChunk*) * midi->chunk_len);
 }
 
 void free_midi(struct Midi* midi){
 	for(int i = 0; i < midi->chunk_len;++i){
 		free_midichunk(midi->chunks[i]);
+		free(midi->chunks[i]);
 	}
 	free(midi->chunks);
 }
@@ -80,23 +91,60 @@ void new_midi_header(struct MidiHeaderChunk* header, uint32_t length, uint16_t f
 	header->division = division;
 }
 
+void free_midi_header(struct MidiHeaderChunk* header){
+	//nothing is allocated
+}
+
+void new_midi_event(struct MidiEvent* event, uint32_t delta_time, char* ev){
+	event->delta_time = delta_time;
+	size_t s = strnlen(ev, MAX_EVENT_LEN);
+	if(!s || s == MAX_EVENT_LEN){
+		// some error
+		event->event_len = 0;
+	} else {
+		event->event = malloc(sizeof(char) * s);
+		event->event_len = s;
+		strncpy(event->event, ev, s);
+	}	
+}
+
+void free_midi_event(struct MidiEvent* event){
+	free(event);
+}
+
+void new_midi_track(struct MidiTrackChunk* track, uint32_t length, size_t event_count){
+	track->length = length;
+	track->event_count = event_count;
+
+	track->events = malloc(sizeof(struct MidiEvent*) * event_count);
+}
+
+void free_midi_track(struct MidiTrackChunk* track){
+	for(int i = 0; i < track->event_count; ++i){
+		free_midi_event(track->events[i]);
+	}
+	free(track->events);
+}
+
 void write_midi(struct Midi* midi, FILE* f) {
 	for(uint32_t i = 0; i < midi->chunk_len; ++i){
 		struct MidiChunk* chunk = midi->chunks[i];
-		char type_c[4] = {'M','T','h','d'};
 		fwrite(chunk->type, sizeof(char), 4, f);
 		fwrite(&chunk->length, sizeof(uint32_t), 1, f);
+		char type_c[4] = {'M','T','h','d'};
 		if(strncmp(chunk->type, type_c, 4) == 0){
 			struct MidiHeaderChunk* header = (struct MidiHeaderChunk*) chunk->chunk;
-			fwrite(&header->format, sizeof(uint16_t), 1, f);
-			fwrite(&header->tracks, sizeof(uint16_t), 1, f);
-			fwrite(&header->division, sizeof(uint16_t), 1, f);
+			fwrite(&(header->format), sizeof(uint16_t), 1, f);
+			fwrite(&(header->tracks), sizeof(uint16_t), 1, f);
+			fwrite(&(header->division), sizeof(uint16_t), 1, f);
 		} else {
 			struct MidiTrackChunk* track = (struct MidiTrackChunk*) chunk->chunk;
-			size_t size;
-			char* v = int_to_varlen(track->delta_time, &size);
-			fwrite(v, sizeof(char), size, f);
-			fwrite(v, sizeof(char), chunk->length - size, f);
+			for(size_t i = 0; i < track->event_count; ++i){
+				size_t time_size;
+				char* time = int_to_varlen(track->events[i]->delta_time, &time_size);
+				fwrite(&(time), sizeof(char), time_size, f);
+				fwrite(track->events[i]->event, sizeof(char), track->events[i]->event_len, f);
+			}
 		}
 	}
 }
@@ -112,13 +160,13 @@ int main(){
 	printf("\t|\t%x\n", len);
 	free(num);
 
-	FILE* f = fopen("test.mid", "wb");
 	struct Midi* m = malloc(sizeof(struct Midi));
 	new_midi(m, 1);
 	m->chunks[0] = malloc(sizeof(struct MidiChunk));
 	char type[4] = {'M','T','h','d'};
 	new_midichunk(m->chunks[0], type, 6);
 	struct MidiHeaderChunk* header = malloc(sizeof(struct MidiHeaderChunk));
+	//6 bytes, type 0 (single track), 1 track, 120 ticks per 1/4 note
 	new_midi_header(header, 6, 0, 1, 0x0078);
 	header->length = m->chunks[0]->length;
 	m->chunks[0]->chunk = header;
@@ -127,5 +175,20 @@ int main(){
 	//turn it into a track
 	type[2]='r';
 	type[3]='k';
-	new_midichunk(m->chunks[1], type, <somefuckinsize>);
+	new_midichunk(m->chunks[1], type, 4);
+	struct MidiTrackChunk* track = malloc(sizeof(struct MidiTrackChunk));
+	//a single event long. it is the end of track event
+	//<delta time>   <end of track>
+	//00             FF 2F 00
+	new_midi_track(track, 4, 1);
+	struct MidiEvent* event = malloc(sizeof(struct MidiEvent));
+	char e[3] = {0xFF, 0x2F, 0x00};
+	new_midi_event(event, 0x00, e);
+	track->events[0] = event;
+
+	FILE* f = fopen("test.mid", "wb");
+	write_midi(m, f);
+	fclose(f);
+	free_midi(m);
+	free(m);
 }

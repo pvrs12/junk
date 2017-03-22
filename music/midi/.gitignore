@@ -1,2 +1,4 @@
+*.mid
+*.midi
 bin
 obj
