@@ -295,7 +295,11 @@ int main(){
 	midi_add_header(m, 2, 2, 120);
 	//let's make a scale!
 	struct MidiTrackChunk* track1 = midi_add_track(m);
-	//{{{ Ascending ionian scale: c4-c5
+	//{{{ Ascending ionian scale trombone: c4-c5
+	//set instrument = trombone
+	char instrument_event[2] = {0xC0, 58};
+	track_add_event_full(track1, 0, instrument_event, 2);
+	
 	//noteOn, ch0, middle_c, mf
 	char ev[3] = {0x90, 0x3C, 0x40};
 	track_add_event_full(track1, 10, ev, 3);
@@ -345,45 +349,45 @@ int main(){
 
 	//and the descending version on a second track!
 	struct MidiTrackChunk* track2 = midi_add_track(m);
-	//{{{ Descending ionian scale: c5-c4
-	char ev2[3] = {0x90, 72, 0x40};
+	//{{{ Descending ionian scale piano: c5-c4
+	char ev2[3] = {0x91, 72, 0x40};
 	track_add_event_full(track2, 10, ev2, 3);
-	ev2[0] = 0x80;
+	ev2[0] = 0x81;
 	track_add_event_full(track2, 120, ev2, 3);
-	ev2[0] = 0x90;
+	ev2[0] = 0x91;
 	ev2[1] = 71;
 	track_add_event_full(track2, 10, ev2, 3);
-	ev2[0] = 0x80;
+	ev2[0] = 0x81;
 	track_add_event_full(track2, 120,ev2,3);
-	ev2[0] = 0x90;
+	ev2[0] = 0x91;
 	ev2[1] = 69;
 	track_add_event_full(track2, 10,ev2,3);
-	ev2[0] = 0x80;
+	ev2[0] = 0x81;
 	track_add_event_full(track2, 120,ev2,3);
-	ev2[0] = 0x90;
+	ev2[0] = 0x91;
 	ev2[1] = 67;
 	track_add_event_full(track2, 10,ev2,3);
-	ev2[0] = 0x80;
+	ev2[0] = 0x81;
 	track_add_event_full(track2, 120,ev2,3);
-	ev2[0] = 0x90;
+	ev2[0] = 0x91;
 	ev2[1] = 65;
 	track_add_event_full(track2, 10,ev2,3);
-	ev2[0] = 0x80;
+	ev2[0] = 0x81;
 	track_add_event_full(track2, 120,ev2,3);
-	ev2[0] = 0x90;
+	ev2[0] = 0x91;
 	ev2[1] = 64;
 	track_add_event_full(track2, 10,ev2,3);
-	ev2[0] = 0x80;
+	ev2[0] = 0x81;
 	track_add_event_full(track2, 120,ev2,3);
-	ev2[0] = 0x90;
+	ev2[0] = 0x91;
 	ev2[1] = 62;
 	track_add_event_full(track2, 10,ev2,3);
-	ev2[0] = 0x80;
+	ev2[0] = 0x81;
 	track_add_event_full(track2, 120,ev2,3);
-	ev2[0] = 0x90;
+	ev2[0] = 0x91;
 	ev2[1] = 60;
 	track_add_event_full(track2, 10,ev2,3);
-	ev2[0] = 0x80;
+	ev2[0] = 0x81;
 	track_add_event_full(track2, 120,ev2,3);
 
 	ev2[0] = 0xFF;
