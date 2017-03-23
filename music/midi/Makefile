@@ -1,4 +1,4 @@
-.PHONY: all clean run lib
+.PHONY: all clean run lib debug
 
 SRC_DIR = src
 INCLUDE_DIRS =
@@ -46,6 +46,10 @@ lib: $(BIN).a
 
 run: $(BIN)
 	$(BIN) $(RUN_ARGS)
+	xxd test.mid
+
+debug: $(BIN)
+	gdb $(BIN)
 
 clean:
 	rm -rf obj
