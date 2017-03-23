@@ -76,6 +76,8 @@ struct MidiTrackChunk {
 void new_midi_track(struct MidiTrackChunk* track, uint32_t length, size_t event_count);
 void free_midi_track(struct MidiTrackChunk* track);
 
+void write_uint16_t(uint16_t data, FILE* f);
+void write_uint32_t(uint32_t data, FILE* f);
 void write_midi(struct Midi* m, FILE* f);
 
 //www.personal.kent.edu/~sbirch/Music_Production/MP-II/MIDI/midi_file_format.htm

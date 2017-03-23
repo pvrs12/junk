@@ -16,7 +16,7 @@ BIN = $(BIN_DIR)/$(BIN_NAME)
 RUN_ARGS = 
 
 CXX = gcc
-CXXFLAGS = -std=c99 $(INCLUDES) -Wall
+CXXFLAGS = -std=c99 $(INCLUDES) -Wall -g
 LINKFLAGS = $(LIBRARY_DIRS) $(LIBRARIES)
 
 AR = ar

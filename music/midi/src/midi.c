@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <math.h>
 
+//for htonl 
+#include <netinet/in.h>
+
 //{{{ varlen_to_int
 uint32_t varlen_to_int (char* var, size_t* size) {
 	uint32_t val = 0;
@@ -126,17 +129,27 @@ void free_midi_track(struct MidiTrackChunk* track){
 	free(track->events);
 }
 
+void write_uint16_t(uint16_t data, FILE* f){
+	uint16_t d = htons(data);
+	fwrite(&d, sizeof(uint16_t), 1, f);
+}
+
+void write_uint32_t(uint32_t data, FILE* f){
+	uint32_t d = htonl(data);
+	fwrite(&d, sizeof(uint32_t), 1, f);
+}
+
 void write_midi(struct Midi* midi, FILE* f) {
 	for(uint32_t i = 0; i < midi->chunk_len; ++i){
 		struct MidiChunk* chunk = midi->chunks[i];
 		fwrite(chunk->type, sizeof(char), 4, f);
-		fwrite(&chunk->length, sizeof(uint32_t), 1, f);
+		write_uint32_t(chunk->length, f);
 		char type_c[4] = {'M','T','h','d'};
 		if(strncmp(chunk->type, type_c, 4) == 0){
 			struct MidiHeaderChunk* header = (struct MidiHeaderChunk*) chunk->chunk;
-			fwrite(&(header->format), sizeof(uint16_t), 1, f);
-			fwrite(&(header->tracks), sizeof(uint16_t), 1, f);
-			fwrite(&(header->division), sizeof(uint16_t), 1, f);
+			write_uint16_t(header->format, f);
+			write_uint16_t(header->tracks, f);
+			write_uint16_t(header->division, f);
 		} else {
 			struct MidiTrackChunk* track = (struct MidiTrackChunk*) chunk->chunk;
 			for(size_t i = 0; i < track->event_count; ++i){
@@ -175,12 +188,15 @@ int main(){
 	//turn it into a track
 	type[2]='r';
 	type[3]='k';
-	new_midichunk(m->chunks[1], type, 4);
+	new_midichunk(m->chunks[1], type, 5);
 	struct MidiTrackChunk* track = malloc(sizeof(struct MidiTrackChunk));
+	track->length = m->chunks[0]->length;
+	m->chunks[1]->chunk = track;
 	//a single event long. it is the end of track event
 	//<delta time>   <end of track>
 	//00             FF 2F 00
-	new_midi_track(track, 4, 1);
+	new_midi_track(track, 5, 1);
+
 	struct MidiEvent* event = malloc(sizeof(struct MidiEvent));
 	char e[3] = {0xFF, 0x2F, 0x00};
 	new_midi_event(event, 0x00, e);
