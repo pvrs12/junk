@@ -31,24 +31,14 @@ uint32_t varlen_to_int (char* var, size_t* size) {
 
 //{{{ int_to_varlen
 char* int_to_varlen(uint32_t val, size_t* _size)	{
-	//even if val == 0 we still need to allocate 1 byte
-	//and we need to set the _size to 1 as well
-	/*if(!val){*/
-		/*char* c = malloc(sizeof(char) * 1);*/
-		/*c[0] = 0x00;*/
-		/*if(_size){*/
-			/*(*_size) = 1;*/
-		/*}*/
-		/*return c;*/
-	/*}*/
-
 	uint32_t val2 = val;
-	int count = 1;
 	//determine the necessary size of the variable length quantity
+	int count = 1;
 	while(val2>>=1){
 		count++;
 	}
 
+	//determine the number of sets of 7 there are
 	size_t size = ceil(count / 7.0);
 	char* var = malloc(sizeof(char) * size);
 	if(_size){
@@ -56,10 +46,14 @@ char* int_to_varlen(uint32_t val, size_t* _size)	{
 	}
 
 	for(int i = 0; i < size; ++i){
+		//zero out the MSB
 		var[size - i - 1] = val & 0x7F;
 		if(i){
+			//if this is not the lowest byte
+			//then set the MSB to 1
 			var[size - i - 1] |= 0x80;
 		}
+		//do next set of 7
 		val >>= 7;
 	}
 	return var;
@@ -94,9 +88,10 @@ void free_midichunk(struct MidiChunk* chunk){
 //}}}
 
 //{{{ new_midi
-void new_midi(struct Midi* midi, int tracks) {
-	midi->chunk_count = tracks + 1;
+void new_midi(struct Midi* midi) {
+	midi->chunk_count = 0;
 	midi->chunks = malloc(sizeof(struct MidiChunk*) * midi->chunk_count);
+	midi->header = NULL;
 }
 //}}}
 
@@ -107,6 +102,43 @@ void free_midi(struct Midi* midi){
 		free(midi->chunks[i]);
 	}
 	free(midi->chunks);
+}
+//}}}
+
+//{{{ midi_add_chunk
+struct MidiChunk* midi_add_chunk(struct Midi* midi){
+	midi->chunk_count++;
+	midi->chunks = realloc(midi->chunks, sizeof(struct MidiChunk*) * midi->chunk_count);
+
+	struct MidiChunk* chunk = malloc(sizeof(struct MidiChunk));
+	midi->chunks[midi->chunk_count - 1] = chunk;
+	return chunk;
+}
+//}}}
+
+//{{{ midi_add_header
+struct MidiHeaderChunk* midi_add_header(struct Midi* midi, uint16_t format, uint16_t tracks, uint16_t division){
+	if(midi->header){
+		//some error
+	}
+	struct MidiChunk* chunk = midi_add_chunk(midi);
+	new_midichunk(chunk, CHUNK_HEADER);
+	struct MidiHeaderChunk* header = malloc(sizeof(struct MidiHeaderChunk));
+	new_midi_header(header, HEADER_LEN, format, tracks, division);
+	chunk->chunk = header;
+	midi->header = header;
+	return header;
+}
+//}}}
+
+//{{{ midi_add_track
+struct MidiTrackChunk* midi_add_track(struct Midi* midi){
+	struct MidiChunk* chunk = midi_add_chunk(midi);
+	new_midichunk(chunk, CHUNK_TRACK);
+	struct MidiTrackChunk* track = malloc(sizeof(struct MidiTrackChunk));
+	new_midi_track(track);
+	chunk->chunk = track;
+	return track;
 }
 //}}}
 
@@ -142,10 +174,10 @@ void free_midi_event(struct MidiEvent* event){
 //}}}
 
 //{{{ new_midi_track
-void new_midi_track(struct MidiTrackChunk* track, size_t event_count){
-	track->event_count = event_count;
+void new_midi_track(struct MidiTrackChunk* track){
+	track->event_count = 0;
 
-	track->events = malloc(sizeof(struct MidiEvent*) * event_count);
+	track->events = malloc(sizeof(struct MidiEvent*) * track ->event_count);
 }
 //}}}
 
@@ -172,6 +204,34 @@ size_t track_length(struct MidiTrackChunk* track){
 }
 //}}}
 
+//{{{ track_add_event
+struct MidiEvent* track_add_event(struct MidiTrackChunk* track){
+	track->event_count++;
+	track->events = realloc(track->events, sizeof(struct MidiEvent*) * track->event_count);
+
+	struct MidiEvent* event = malloc(sizeof(struct MidiEvent));
+	track->events[track->event_count - 1] = event;
+	return event;
+}
+//}}}
+
+//{{{ track_add_event_full
+struct MidiEvent* track_add_event_full(struct MidiTrackChunk* track, uint32_t delta_time, char* event_data, size_t event_data_len){
+	struct MidiEvent* event = track_add_event(track);
+	new_midi_event(event, delta_time, event_data, event_data_len);
+	return event;
+}
+//}}}
+
+//{{{ track_add_event_existing
+void track_add_event_existing(struct MidiTrackChunk* track, struct MidiEvent* event){
+	track->event_count++;
+	track->events = realloc(track->events, sizeof(struct MidiEvent*) * track->event_count);
+
+	track->events[track->event_count - 1] = event;
+}
+//}}}
+
 //{{{ write_uint16_t
 void write_uint16_t(uint16_t data, FILE* f){
 	uint16_t d = htons(data);
@@ -186,6 +246,7 @@ void write_uint32_t(uint32_t data, FILE* f){
 }
 //}}}
 
+//{{{ write_midi
 void write_midi(struct Midi* midi, FILE* f) {
 	for(uint32_t i = 0; i < midi->chunk_count; ++i){
 		struct MidiChunk* chunk = midi->chunks[i];
@@ -202,13 +263,20 @@ void write_midi(struct Midi* midi, FILE* f) {
 			for(size_t i = 0; i < track->event_count; ++i){
 				size_t time_size;
 				char* time = int_to_varlen(track->events[i]->delta_time, &time_size);
-				fwrite(&time, sizeof(char), time_size, f);
+				fwrite(time, sizeof(char), time_size, f);
 				fwrite(track->events[i]->event, sizeof(char), track->events[i]->event_len, f);
 				free(time);
 			}
 		}
 	}
 }
+//}}}
+
+//{{{ read_midi
+struct Midi* read_midi(FILE* f){	
+	return NULL;
+}
+//}}}
 
 int main(){
 	size_t size;
@@ -222,38 +290,107 @@ int main(){
 	free(num);
 
 	struct Midi* m = malloc(sizeof(struct Midi));
-	new_midi(m, 1);
-	m->chunks[0] = malloc(sizeof(struct MidiChunk));
-	new_midichunk(m->chunks[0], CHUNK_HEADER);
-	struct MidiHeaderChunk* header = malloc(sizeof(struct MidiHeaderChunk));
-	//6 bytes, type 0 (single track), 1 track, 120 ticks per 1/4 note
-	new_midi_header(header, HEADER_LEN, 0, 1, 120);
-	m->chunks[0]->chunk = header;
-
-	m->chunks[1] = malloc(sizeof(struct MidiChunk));
-	new_midichunk(m->chunks[1], CHUNK_TRACK);
-	struct MidiTrackChunk* track = malloc(sizeof(struct MidiTrackChunk));
-	//3 events; turn on C, turn off C, stop track
-	new_midi_track(track, 3);
-	m->chunks[1]->chunk = track;
-
-	struct MidiEvent* note_on = malloc(sizeof(struct MidiEvent));
+	new_midi(m);
+	//mode 2. 2 tracks. 120 ticks/quarternote
+	midi_add_header(m, 2, 2, 120);
+	//let's make a scale!
+	struct MidiTrackChunk* track1 = midi_add_track(m);
+	//{{{ Ascending ionian scale: c4-c5
 	//noteOn, ch0, middle_c, mf
-	char ev[4] = {0x90, 0x3C, 0x40,0x00};
-	new_midi_event(note_on, 0x01, ev, 4);
-	track->events[0] = note_on;
-
-	struct MidiEvent* note_off = malloc(sizeof(struct MidiEvent));
+	char ev[3] = {0x90, 0x3C, 0x40};
+	track_add_event_full(track1, 10, ev, 3);
 	ev[0] = 0x80;
-	ev[1] = 0x3c;
-	ev[2] = 0x40;
-	new_midi_event(note_off, 0x01, ev, 4);
-	track->events[1] = note_off;
+	track_add_event_full(track1, 120, ev, 3);
+	ev[0] = 0x90;
+	ev[1] = 62;
+	track_add_event_full(track1, 10, ev, 3);
+	ev[0] = 0x80;
+	track_add_event_full(track1, 120,ev,3);
+	ev[0] = 0x90;
+	ev[1] = 64;
+	track_add_event_full(track1, 10,ev,3);
+	ev[0] = 0x80;
+	track_add_event_full(track1, 120,ev,3);
+	ev[0] = 0x90;
+	ev[1] = 65;
+	track_add_event_full(track1, 10,ev,3);
+	ev[0] = 0x80;
+	track_add_event_full(track1, 120,ev,3);
+	ev[0] = 0x90;
+	ev[1] = 67;
+	track_add_event_full(track1, 10,ev,3);
+	ev[0] = 0x80;
+	track_add_event_full(track1, 120,ev,3);
+	ev[0] = 0x90;
+	ev[1] = 69;
+	track_add_event_full(track1, 10,ev,3);
+	ev[0] = 0x80;
+	track_add_event_full(track1, 120,ev,3);
+	ev[0] = 0x90;
+	ev[1] = 71;
+	track_add_event_full(track1, 10,ev,3);
+	ev[0] = 0x80;
+	track_add_event_full(track1, 120,ev,3);
+	ev[0] = 0x90;
+	ev[1] = 72;
+	track_add_event_full(track1, 10,ev,3);
+	ev[0] = 0x80;
+	track_add_event_full(track1, 120,ev,3);
 
-	struct MidiEvent* track_end = malloc(sizeof(struct MidiEvent));
-	char e[3] = {0xFF, 0x2F, 0x00};
-	new_midi_event(track_end, 0x01, e, 3);
-	track->events[2] = track_end;
+	ev[0] = 0xFF;
+	ev[1] = 0x2F;
+	ev[2] = 0x00;
+	track_add_event_full(track1, 0, ev, 3);
+	//}}}
+
+	//and the descending version on a second track!
+	struct MidiTrackChunk* track2 = midi_add_track(m);
+	//{{{ Descending ionian scale: c5-c4
+	char ev2[3] = {0x90, 72, 0x40};
+	track_add_event_full(track2, 10, ev2, 3);
+	ev2[0] = 0x80;
+	track_add_event_full(track2, 120, ev2, 3);
+	ev2[0] = 0x90;
+	ev2[1] = 71;
+	track_add_event_full(track2, 10, ev2, 3);
+	ev2[0] = 0x80;
+	track_add_event_full(track2, 120,ev2,3);
+	ev2[0] = 0x90;
+	ev2[1] = 69;
+	track_add_event_full(track2, 10,ev2,3);
+	ev2[0] = 0x80;
+	track_add_event_full(track2, 120,ev2,3);
+	ev2[0] = 0x90;
+	ev2[1] = 67;
+	track_add_event_full(track2, 10,ev2,3);
+	ev2[0] = 0x80;
+	track_add_event_full(track2, 120,ev2,3);
+	ev2[0] = 0x90;
+	ev2[1] = 65;
+	track_add_event_full(track2, 10,ev2,3);
+	ev2[0] = 0x80;
+	track_add_event_full(track2, 120,ev2,3);
+	ev2[0] = 0x90;
+	ev2[1] = 64;
+	track_add_event_full(track2, 10,ev2,3);
+	ev2[0] = 0x80;
+	track_add_event_full(track2, 120,ev2,3);
+	ev2[0] = 0x90;
+	ev2[1] = 62;
+	track_add_event_full(track2, 10,ev2,3);
+	ev2[0] = 0x80;
+	track_add_event_full(track2, 120,ev2,3);
+	ev2[0] = 0x90;
+	ev2[1] = 60;
+	track_add_event_full(track2, 10,ev2,3);
+	ev2[0] = 0x80;
+	track_add_event_full(track2, 120,ev2,3);
+
+	ev2[0] = 0xFF;
+	ev2[1] = 0x2F;
+	ev2[2] = 0x00;
+	track_add_event_full(track2, 0, ev2, 3);
+	//}}}
 
 	FILE* f = fopen("test.mid", "wb");
 	write_midi(m, f);

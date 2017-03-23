@@ -9,17 +9,6 @@
 #define HEADER_LEN 6
 #define MAX_EVENT_LEN 50
 
-size_t strnlen(const char* str, size_t max){
-	if(!str){
-		return 0;
-	}
-	size_t i;
-	for( i = 0; i < max && str[i]; ++i){
-		
-	}
-	return i;
-}
-
 enum ChunkType {
 	CHUNK_HEADER, 
 	CHUNK_TRACK
@@ -45,10 +34,15 @@ struct Midi {
 	uint32_t chunk_count;
 	//array of MidiChunk*
 	struct MidiChunk** chunks;
+	struct MidiHeaderChunk* header;
 };
 
-void new_midi(struct Midi* midi, int tracks);
+void new_midi(struct Midi* midi);
 void free_midi(struct Midi* midi);
+
+struct MidiChunk* midi_add_chunk(struct Midi* midi);
+struct MidiHeaderChunk* midi_add_header(struct Midi* midi, uint16_t format, uint16_t tracks, uint16_t division);
+struct MidiTrackChunk* midi_add_track(struct Midi* midi);
 
 struct MidiHeaderChunk {
 	uint32_t length;
@@ -77,14 +71,19 @@ struct MidiTrackChunk {
 	struct MidiEvent** events;
 };
 
-void new_midi_track(struct MidiTrackChunk* track, size_t event_count);
+void new_midi_track(struct MidiTrackChunk* track);
 void free_midi_track(struct MidiTrackChunk* track);
 
+struct MidiEvent* track_add_event(struct MidiTrackChunk* track);
+struct MidiEvent* track_add_event_full(struct MidiTrackChunk* track, uint32_t delta_time, char* event_data, size_t event_data_len);
+void track_add_event_existing(struct MidiTrackChunk* track, struct MidiEvent* event);
 size_t track_length(struct MidiTrackChunk* track);
 
 void write_uint16_t(uint16_t data, FILE* f);
 void write_uint32_t(uint32_t data, FILE* f);
 void write_midi(struct Midi* m, FILE* f);
+
+struct Midi* read_midi(FILE* f);
 
 //www.personal.kent.edu/~sbirch/Music_Production/MP-II/MIDI/midi_file_format.htm
 
