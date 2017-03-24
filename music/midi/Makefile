@@ -46,7 +46,6 @@ lib: $(BIN).a
 
 run: $(BIN)
 	$(BIN) $(RUN_ARGS)
-	xxd test.mid
 
 debug: $(BIN)
 	gdb $(BIN)

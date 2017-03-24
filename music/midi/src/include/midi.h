@@ -15,13 +15,13 @@ enum ChunkType {
 };
 
 ///Converts a variable-length quantity to an integer
-uint32_t varlen_to_int(char* var, size_t* size);
+uint32_t varlen_to_int(uint8_t* var, size_t* size);
 
 ///Converts an integer to a variable-length quantity
-char* int_to_varlen(uint32_t val, size_t* size);
+uint8_t* int_to_varlen(uint32_t val, size_t* size);
 
 struct MidiChunk {
-	char type[TYPE_LEN];
+	uint8_t type[TYPE_LEN];
 	enum ChunkType type_e;
 
 	void* chunk;
@@ -59,11 +59,15 @@ struct MidiEvent {
 	uint32_t delta_time;
 
 	size_t event_len;
-	char* event;
+	uint8_t* event;
 };
 
-void new_midi_event(struct MidiEvent* event, uint32_t delta_time, char* ev, size_t event_length);
+void new_midi_event(struct MidiEvent* event, uint32_t delta_time, uint8_t* ev, size_t event_length);
 void free_midi_event(struct MidiEvent* event);
+struct MidiEvent* parse_midi_event(uint8_t* event, size_t* size_read);
+size_t parse_midi_voice_event(uint8_t* event_code);
+size_t parse_midi_sysex_event(uint8_t* event_code);
+size_t parse_midi_meta_event(uint8_t* event_code);
 
 struct MidiTrackChunk {
 	size_t event_count;
@@ -75,7 +79,7 @@ void new_midi_track(struct MidiTrackChunk* track);
 void free_midi_track(struct MidiTrackChunk* track);
 
 struct MidiEvent* track_add_event(struct MidiTrackChunk* track);
-struct MidiEvent* track_add_event_full(struct MidiTrackChunk* track, uint32_t delta_time, char* event_data, size_t event_data_len);
+struct MidiEvent* track_add_event_full(struct MidiTrackChunk* track, uint32_t delta_time, uint8_t* event_data, size_t event_data_len);
 void track_add_event_existing(struct MidiTrackChunk* track, struct MidiEvent* event);
 size_t track_length(struct MidiTrackChunk* track);
 
@@ -83,6 +87,8 @@ void write_uint16_t(uint16_t data, FILE* f);
 void write_uint32_t(uint32_t data, FILE* f);
 void write_midi(struct Midi* m, FILE* f);
 
+uint16_t read_uint16_t(FILE* f);
+uint32_t read_uint32_t(FILE* f);
 struct Midi* read_midi(FILE* f);
 
 //www.personal.kent.edu/~sbirch/Music_Production/MP-II/MIDI/midi_file_format.htm
