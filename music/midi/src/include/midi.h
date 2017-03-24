@@ -15,7 +15,7 @@ enum ChunkType {
 };
 
 ///Converts a variable-length quantity to an integer
-uint32_t varlen_to_int(uint8_t* var, size_t* size);
+uint32_t varlen_to_int(const uint8_t* var, size_t* size);
 
 ///Converts an integer to a variable-length quantity
 uint8_t* int_to_varlen(uint32_t val, size_t* size);
@@ -32,7 +32,7 @@ void free_midichunk(struct MidiChunk* chunk);
 
 struct Midi {
 	uint32_t chunk_count;
-	//array of MidiChunk*
+
 	struct MidiChunk** chunks;
 	struct MidiHeaderChunk* header;
 };
@@ -62,12 +62,12 @@ struct MidiEvent {
 	uint8_t* event;
 };
 
-void new_midi_event(struct MidiEvent* event, uint32_t delta_time, uint8_t* ev, size_t event_length);
+void new_midi_event(struct MidiEvent* event, uint32_t delta_time, const uint8_t* ev, size_t event_length);
 void free_midi_event(struct MidiEvent* event);
-struct MidiEvent* parse_midi_event(uint8_t* event, size_t* size_read);
-size_t parse_midi_voice_event(uint8_t* event_code);
-size_t parse_midi_sysex_event(uint8_t* event_code);
-size_t parse_midi_meta_event(uint8_t* event_code);
+struct MidiEvent* parse_midi_event(const uint8_t* event, size_t* size_read);
+size_t parse_midi_voice_event(const uint8_t* event_code);
+size_t parse_midi_sysex_event(const uint8_t* event_code);
+size_t parse_midi_meta_event(const uint8_t* event_code);
 
 struct MidiTrackChunk {
 	size_t event_count;
@@ -79,7 +79,7 @@ void new_midi_track(struct MidiTrackChunk* track);
 void free_midi_track(struct MidiTrackChunk* track);
 
 struct MidiEvent* track_add_event(struct MidiTrackChunk* track);
-struct MidiEvent* track_add_event_full(struct MidiTrackChunk* track, uint32_t delta_time, uint8_t* event_data, size_t event_data_len);
+struct MidiEvent* track_add_event_full(struct MidiTrackChunk* track, uint32_t delta_time, const uint8_t* event_data, size_t event_data_len);
 void track_add_event_existing(struct MidiTrackChunk* track, struct MidiEvent* event);
 size_t track_length(struct MidiTrackChunk* track);
 

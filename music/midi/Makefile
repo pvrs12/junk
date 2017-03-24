@@ -6,17 +6,19 @@ OBJECT_DIR = obj
 LIBRARY_DIRS = 
 BIN_DIR = bin
 
-OBJ_FILES = midi.o
+OBJ_FILES = midi.o 
+RUN_OBJ_FILES = test.o
 BIN_NAME = midi
-LIBRARIES = -lm
+LIBRARIES =
 
 OBJ = $(patsubst %, $(OBJECT_DIR)/%,$(OBJ_FILES))
+RUN_OBJ = $(OBJ) $(patsubst %, $(OBJECT_DIR)/%,$(RUN_OBJ_FILES))
 
 BIN = $(BIN_DIR)/$(BIN_NAME)
 RUN_ARGS = 
 
 CXX = gcc
-CXXFLAGS = -std=c99 $(INCLUDES) -Wall -g
+CXXFLAGS = -std=c99 $(INCLUDES) -Wall -g -pedantic
 LINKFLAGS = $(LIBRARY_DIRS) $(LIBRARIES)
 
 AR = ar
@@ -36,7 +38,7 @@ $(SRC_DIR):
 $(OBJECT_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJECT_DIR)
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
-$(BIN): $(OBJ) | $(BIN_DIR)
+$(BIN): $(RUN_OBJ) | $(BIN_DIR)
 	$(CXX) -o $@ $^ $(LINKFLAGS)
 
 $(BIN).a: $(OBJ) | $(BIN_DIR)
