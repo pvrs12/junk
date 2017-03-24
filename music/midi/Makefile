@@ -1,4 +1,4 @@
-.PHONY: all clean run lib debug
+.PHONY: all clean test lib debug
 
 SRC_DIR = src
 INCLUDE_DIRS =
@@ -47,7 +47,7 @@ $(LIB): $(OBJ) | $(BIN_DIR)
 
 lib: $(LIB)
 
-run: $(BIN)
+test: $(BIN)
 	$(BIN) $(RUN_ARGS)
 
 debug: $(BIN)
