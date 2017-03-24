@@ -15,7 +15,7 @@ OBJ = $(patsubst %, $(OBJECT_DIR)/%,$(OBJ_FILES))
 RUN_OBJ = $(patsubst %, $(OBJECT_DIR)/%,$(RUN_OBJ_FILES))
 
 BIN = $(BIN_DIR)/$(BIN_NAME)
-LIBRARY_NAME = $(BIN_DIR)/lib$(BIN_NAME).a
+LIB = $(BIN_DIR)/lib$(BIN_NAME).a
 RUN_ARGS = 
 
 CXX = gcc
@@ -39,13 +39,13 @@ $(SRC_DIR):
 $(OBJECT_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJECT_DIR)
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
-$(BIN): $(RUN_OBJ) | $(BIN_DIR)
+$(BIN): $(RUN_OBJ) $(LIB) | $(BIN_DIR)
 	$(CXX) -o $@ $^ $(LINKFLAGS)
 
-$(LIBRARY_NAME): $(OBJ) | $(BIN_DIR)
+$(LIB): $(OBJ) | $(BIN_DIR)
 	$(AR) $(ARFLAGS) $@ $^
 
-lib: $(LIBRARY_NAME)
+lib: $(LIB)
 
 run: $(BIN)
 	$(BIN) $(RUN_ARGS)
