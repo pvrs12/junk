@@ -3,18 +3,19 @@
 SRC_DIR = src
 INCLUDE_DIRS =
 OBJECT_DIR = obj
-LIBRARY_DIRS = 
+LIBRARY_DIRS = -Lbin
 BIN_DIR = bin
 
 OBJ_FILES = midi.o 
 RUN_OBJ_FILES = test.o
 BIN_NAME = midi
-LIBRARIES =
+LIBRARIES = -lmidi
 
 OBJ = $(patsubst %, $(OBJECT_DIR)/%,$(OBJ_FILES))
-RUN_OBJ = $(OBJ) $(patsubst %, $(OBJECT_DIR)/%,$(RUN_OBJ_FILES))
+RUN_OBJ = $(patsubst %, $(OBJECT_DIR)/%,$(RUN_OBJ_FILES))
 
 BIN = $(BIN_DIR)/$(BIN_NAME)
+LIBRARY_NAME = $(BIN_DIR)/lib$(BIN_NAME).a
 RUN_ARGS = 
 
 CXX = gcc
@@ -41,10 +42,10 @@ $(OBJECT_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJECT_DIR)
 $(BIN): $(RUN_OBJ) | $(BIN_DIR)
 	$(CXX) -o $@ $^ $(LINKFLAGS)
 
-$(BIN).a: $(OBJ) | $(BIN_DIR)
-	$(AR) $(ARFLAGS) $(BIN).a $^
+$(LIBRARY_NAME): $(OBJ) | $(BIN_DIR)
+	$(AR) $(ARFLAGS) $@ $^
 
-lib: $(BIN).a
+lib: $(LIBRARY_NAME)
 
 run: $(BIN)
 	$(BIN) $(RUN_ARGS)
