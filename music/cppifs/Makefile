@@ -1,22 +1,24 @@
-.PHONY: all clean run lib
+.PHONY: all
+.PHONY: clean
+.PHONY: run
 
 SRC_DIR = src
-INCLUDE_DIRS =
+INCLUDE_DIRS = -Iinclude
 OBJECT_DIR = obj
-LIBRARY_DIRS = 
+LIBRARY_DIRS = -Llib
 BIN_DIR = bin
 
-OBJ_FILES = test1.o test2.o
-BIN_NAME = test
-LIBRARIES = 
+OBJ_FILES = ifs.o
+BIN_NAME = ifs
+LIBRARIES = -lmidi
 
 OBJ = $(patsubst %, $(OBJECT_DIR)/%,$(OBJ_FILES))
 
 BIN = $(BIN_DIR)/$(BIN_NAME)
-RUN_ARGS = 
+RUN_ARGS = 100000 < inputs/fern > outputs/fern.pbm
 
 CXX = g++
-CXXFLAGS = -std=c++11 $(INCLUDES)
+CXXFLAGS = -std=c++11 $(INCLUDE_DIRS)
 LINKFLAGS = $(LIBRARY_DIRS) $(LIBRARIES)
 
 AR = ar
@@ -33,18 +35,13 @@ $(BIN_DIR):
 $(SRC_DIR):
 	mkdir $(SRC_DIR)
 
-$(OBJECT_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJECT_DIR)
+$(OBJECT_DIR)/%.o: $(SRC_DIR)/%.cpp $(OBJECT_DIR) $(BIN_DIR)
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
-$(BIN): $(OBJ) | $(BIN_DIR)
+$(BIN): $(OBJ)
 	$(CXX) -o $@ $^ $(LINKFLAGS)
 
-$(BIN).a: $(OBJ) | $(BIN_DIR)
-	$(AR) $(ARFLAGS) $(BIN).a $^
-
-lib: $(BIN).a
-
-run: $(BIN)
+run:  $(BIN)
 	$(BIN) $(RUN_ARGS)
 
 clean:
