@@ -135,6 +135,95 @@ image_field get_image(const point_field& points, double min_x, double max_x, dou
 	return image;
 }
 
+Midi* get_midi(const point_field& points, double min_x, double max_x, double min_y, double max_y){
+	Midi* m = new Midi();
+	new_midi(m);
+
+	//mode 2 midi, 3 tracks, 384 divisions per quarter note
+	midi_add_header(m, 2, 3, 384);
+
+	MidiTrackChunk* tempo_track = midi_add_track(m);
+
+	EventString* e = new EventString();
+	e = new_event_string(e);
+	e = add_meta_message(e, META_TIME_SIGNATURE);
+	//{numerator, denominator (2^denom), midi clocks per tick, 32nd notes per 24 midi clocks (8 is standard}
+	//	4/4 time with 8 32nd notes per beat
+	uint8_t time_sig[] = {4, 4, 2, 24, 8};
+	e = add_buffer(e, time_sig, 5);
+	track_add_event_full(tempo_track, 0, e->event_string, e->event_string_len);
+	free_event_string(e);
+
+	e = new_event_string(e);
+	//number of microseconds per quarter note
+	e = add_meta_message(e, META_SET_TEMPO);
+	//24bit (550000)
+	uint8_t tempo[] = {0x08, 0x64, 0x70};
+	e = add_buffer(e, tempo, 3);
+	track_add_event_full(tempo_track, 0, e->event_string, e->event_string_len);
+	free_event_string(e);
+
+	//end of track
+	e = new_event_string(e);
+	e = add_meta_message(e, META_END);
+	//technically as a meta message a varlen field must be included, but it is always 0 for the END event
+	e = add_byte(e, 0);
+	track_add_event_full(tempo_track, 0, e->event_string, e->event_string_len);
+	free_event_string(e);
+
+	MidiTrackChunk* track_x = midi_add_track(m);
+	MidiTrackChunk* track_y = midi_add_track(m);
+	//map points within the high and low available
+	for(const std::pair<color,std::pair<double, double>>& pp: points){
+		std::pair<double,double> p = pp.second;
+		int note_x = scale(p.first - min_x, 0, max_x - min_x, NOTE_C4, NOTE_C5);
+		int note_y = scale(p.second - min_y, 0, max_y - min_y, NOTE_C4, NOTE_C5);
+
+		e = new_event_string(e);
+		e = add_voice_message(e, VOICE_NOTE_ON, CHANNEL_0);
+		e = add_byte(e, note_x);
+		e = add_byte(e, VELOCITY_MEZZOFORTE);
+		track_add_event_full(track_x, 0, e->event_string, e->event_string_len);
+		free_event_string(e);
+
+		e = new_event_string(e);
+		e = add_voice_message(e, VOICE_NOTE_OFF, CHANNEL_0);
+		e = add_byte(e, note_x);
+		e = add_byte(e, VELOCITY_MEZZOFORTE);
+		track_add_event_full(track_x, 384, e->event_string, e->event_string_len);
+		free_event_string(e);
+
+		e = new_event_string(e);
+		e = add_voice_message(e, VOICE_NOTE_ON, CHANNEL_0);
+		e = add_byte(e, note_y);
+		e = add_byte(e, VELOCITY_MEZZOFORTE);
+		track_add_event_full(track_y, 0, e->event_string, e->event_string_len);
+		free_event_string(e);
+
+		e = new_event_string(e);
+		e = add_voice_message(e, VOICE_NOTE_OFF, CHANNEL_0);
+		e = add_byte(e, note_y);
+		e = add_byte(e, VELOCITY_MEZZOFORTE);
+		track_add_event_full(track_y, 384, e->event_string, e->event_string_len);
+		free_event_string(e);
+	}
+
+	e = new_event_string(e);
+	e = add_meta_message(e, META_END);
+	e = add_byte(e, 0);
+	track_add_event_full(track_x, 384, e->event_string, e->event_string_len);
+	free_event_string(e);
+
+	e = new_event_string(e);
+	e = add_meta_message(e, META_END);
+	e = add_byte(e, 0);
+	track_add_event_full(track_y, 384, e->event_string, e->event_string_len);
+	free_event_string(e);
+	
+	return m;
+
+}
+
 int main(int argc, char* argv[]){
 
 	if(argc > 1){
@@ -168,4 +257,10 @@ int main(int argc, char* argv[]){
 	image_field image = get_image(points, min_x, max_x, min_y, max_y);
 
 	write_pbm(image, std::cout);
+
+	Midi* midi = get_midi(points, min_x, max_x, min_y, max_y);
+	FILE* f = fopen("output.mid", "wb");
+	write_midi(midi, f);
+	fclose(f);
+	free_midi(midi);
 }
