@@ -12,6 +12,15 @@ const unsigned ROOM_COUNT = 10;
 const char FILLED = '#';
 const char EMPTY = ' ';
 
+enum Direction {
+	NORTH,
+	EAST,
+	SOUTH,
+	WEST
+};
+
+class DungeonException {};
+
 class Dungeon;
 
 class Room {
@@ -34,6 +43,7 @@ public:
 	}
 	Room(std::pair<unsigned, unsigned> base, Dungeon* dungeon)
 			: _base(base), _dungeon(dungeon) {
+		_add_tile(base);
 	}
 	~Room();
 
@@ -68,6 +78,8 @@ public:
 
 	char get_tile(std::pair<unsigned, unsigned> loc) const;
 	char get_tile(unsigned row, unsigned col) const;
+
+	void set_tile(std::pair<unsigned, unsigned> loc, char c);
 };
 
 #endif /* DUNGEON_H */

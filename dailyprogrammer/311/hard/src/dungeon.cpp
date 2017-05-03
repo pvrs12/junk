@@ -3,6 +3,8 @@
 #include <random>
 #include <sstream>
 
+#include <iostream>
+
 std::pair<unsigned, unsigned> Room::get_base() const {
 	return _base;
 }
@@ -12,11 +14,65 @@ Room::~Room() {
 
 void Room::grow_room() {
 	//find a tile on the perimeter, pick a valid FILLED location, expand there
+	std::random_device rd;
+	std::mt19937 gen(rd());
+
+	std::uniform_int_distribution<> perimeter_dis(0, _perimeter.size() - 1);
+
+	std::pair<unsigned, unsigned> tile = _perimeter[perimeter_dis(gen)];
+
+	//find a FILLED tile nearby
+	std::vector<Direction> available_directions;
+	if (tile.first > 0 && _dungeon->get_tile(tile.first - 1, tile.second) == FILLED) {
+		available_directions.push_back(Direction::NORTH);
+	}
+	if (tile.second > 0 && _dungeon->get_tile(tile.first, tile.second - 1) == FILLED) {
+		available_directions.push_back(Direction::WEST);
+	}
+	if (tile.first < _dungeon->get_rows() - 1 && _dungeon->get_tile(tile.first + 1, tile.second) == FILLED) {
+		available_directions.push_back(Direction::SOUTH);
+	}
+	if (tile.second < _dungeon->get_cols() - 1 && _dungeon->get_tile(tile.first, tile.second + 1) == FILLED) {
+		available_directions.push_back(Direction::EAST);
+	}
+
+	std::uniform_int_distribution<> direction_dis(0, available_directions.size() - 1);
+	Direction d = available_directions[direction_dis(gen)];
+	switch (d) {
+	case NORTH: {
+		std::cout << "adding north" << std::endl;
+		std::cout << "(" << tile.first - 1 << ", " << tile.second << ")" << std::endl;
+		_add_tile(std::make_pair(tile.first - 1, tile.second));
+		break;
+	}
+	case WEST: {
+		std::cout << "adding west" << std::endl;
+		std::cout << "(" << tile.first << ", " << tile.second - 1 << ")" << std::endl;
+		_add_tile(std::make_pair(tile.first, tile.second - 1));
+		break;
+	}
+	case SOUTH: {
+		std::cout << "adding south" << std::endl;
+		std::cout << "(" << tile.first + 1 << ", " << tile.second << ")" << std::endl;
+		_add_tile(std::make_pair(tile.first + 1, tile.second));
+		break;
+	}
+	case EAST: {
+		std::cout << "adding east" << std::endl;
+		std::cout << "(" << tile.first << ", " << tile.second + 1 << ")" << std::endl;
+		_add_tile(std::make_pair(tile.first, tile.second + 1));
+		break;
+	}
+	default: {
+		throw DungeonException();
+	}
+	}
 }
 
 void Room::_add_tile(std::pair<unsigned, unsigned> tile) {
 	_tiles.push_back(tile);
 	_perimeter.push_back(tile);
+	_dungeon->set_tile(tile, EMPTY);
 
 	_purge_perimeter();
 }
@@ -32,7 +88,7 @@ void Room::_purge_perimeter() {
 		if (p.second > 0 && _dungeon->get_tile(p.first, p.second - 1) == FILLED) {
 			open_sides++;
 		}
-		if (p.first < _dungeon->get_rows() - 2 && _dungeon->get_tile(p.first + 1, p.second) == FILLED) {
+		if (p.first < _dungeon->get_rows() - 1 && _dungeon->get_tile(p.first + 1, p.second) == FILLED) {
 			open_sides++;
 		}
 		if (p.second < _dungeon->get_cols() - 1 && _dungeon->get_tile(p.first, p.second + 1) == FILLED) {
@@ -107,6 +163,13 @@ void Dungeon::generate() {
 
 		_rooms.emplace_back(row, col, this);
 	}
+	for (unsigned j = 0; j < 5; ++j) {
+		std::cout << j << std::endl;
+		std::cout << to_string() << std::endl;
+		for (unsigned i = 0; i < _rooms.size(); ++i) {
+			_rooms[i].grow_room();
+		}
+	}
 }
 
 unsigned Dungeon::get_rows() const {
@@ -123,6 +186,10 @@ char Dungeon::get_tile(std::pair<unsigned, unsigned> loc) const {
 
 char Dungeon::get_tile(unsigned row, unsigned col) const {
 	return _grid[row][col];
+}
+
+void Dungeon::set_tile(std::pair<unsigned, unsigned> loc, char c) {
+	_grid[loc.first][loc.second] = c;
 }
 
 Dungeon::~Dungeon() {

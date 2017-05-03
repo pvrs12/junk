@@ -6,6 +6,7 @@ int main(int argc, char* argv[]){
 	if(argc < 3){
 		std::cerr<<"You must provide the dimesions of the dungeon to build"<<std::endl;
 		std::cerr<<"\t"<<argv[0]<<" <rows> <cols>"<<std::endl;
+		return 1;
 	}
 
 	int rows = atoi(argv[1]);
