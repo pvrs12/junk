@@ -1,0 +1,13 @@
+16 = population
+24 = initialInfected
+32 = infectionRate
+40 = recoveryRate
+48 = vaccinationRate
+
+56 = susceptibleCount
+64 = infectedCount
+72 = immuneCount
+
+76 = i
+
+
