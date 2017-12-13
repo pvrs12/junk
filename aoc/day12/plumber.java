@@ -40,7 +40,17 @@ public class plumber {
         }
 
         //start at 0, DFS and count unique entries
-        System.out.println(get_connected(dataset, 0));
+        //System.out.println(get_connected(dataset, 0));
+
+        int count = 0;
+        for(HashMap.Entry<Integer, ArrayList<Integer>> kv: dataset.entrySet()){
+            if(!visited.contains(kv.getKey())){
+                System.out.println(kv.getKey() + "\t" + get_connected(dataset, kv.getKey()));
+                count ++;
+            }
+        }
+        System.out.println(count);
+
         in.close();
     }
 }
