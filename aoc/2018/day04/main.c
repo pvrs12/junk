@@ -201,6 +201,7 @@ int main() {
             guard_id = logs[i]->guard_id;
             guard_loc = find_guard(guards, guards_size, guard_id);
             if(guard_loc == -1){
+                //add guard to a list of guards
                 struct guard* g = new_guard(guard_id);
                 guard_loc = guards_size;
                 guards[guards_size++] = g;
@@ -210,22 +211,27 @@ int main() {
                 }
             }
         } else {
+            //using the "current" guard
             if (logs[i]->type == ASLEEP) {
                 sleep_start = logs[i]->minute;
             }
             if (logs[i]->type == AWAKE) {
+                //if the guard woke, get how long were they asleep
+                //and increase the frequency of that minute
                 for(int j=sleep_start; j<logs[i]->minute;++j){
                     guards[guard_loc]->minutes[j] ++;
                 }
                 guards[guard_loc]->minutes_asleep += (logs[i]->minute - sleep_start);
                 sleep_start = 0;
             }
+            //set the id in this log (not acutally necessary, but was useful when debugging)
             logs[i]->guard_id = guard_id;
         }
     }
 
     int sleep_time = -1;
     int sleep_spot = -1;
+    //identify the guard who slept for the longest total
     for(int i=0; i<guards_size; ++i){
         if(guards[i]->minutes_asleep > sleep_time) {
             sleep_time = guards[i]->minutes_asleep;
@@ -233,6 +239,7 @@ int main() {
         }
     }
     printf("Sleep Guy = %d\tTime = %d\n", guards[sleep_spot]->id, sleep_time);
+    //identify during which minute this slep boi was asleep most frequently
     int common_minute = -1;
     int max_time = 0;
     for(int i=0; i<60; ++i){
@@ -245,6 +252,7 @@ int main() {
     printf("common minute = %d\n", common_minute);
     printf("part1 answer = %d\n", common_minute * guards[sleep_spot]->id);
 
+    //identify the most frequently slept minute by a single guard
     int biggest_guard = -1;
     int biggest_minute = -1;
     int biggest_minute_size = -1;
