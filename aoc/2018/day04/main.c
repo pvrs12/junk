@@ -23,6 +23,7 @@ struct log {
 struct guard {
     int id;
     int minutes_asleep;
+    int minutes[60];
 };
 
 struct log* new_log(int year, int month, int day, int hour, int minute, enum log_type type) {
@@ -122,6 +123,20 @@ void free_logs(struct log** logs, int logs_size) {
     logs = NULL;
 }
 
+struct guard* new_guard(int guard_id) {
+    struct guard* g = malloc(sizeof(struct guard));
+    g->id = guard_id;
+    g->minutes_asleep=0;
+    for(int i=0; i<60; ++i){
+        g->minutes[i] = 0;
+    }
+    return g;
+}
+
+void free_guard(struct guard* g){
+    free(g);
+}
+
 int find_guard(struct guard** guards, int guards_size, int id) {
     for(int i=0; i<guards_size; ++i) {
         if (guards[i]->id == id){
@@ -133,7 +148,7 @@ int find_guard(struct guard** guards, int guards_size, int id) {
 
 void free_guards(struct guard** guards, int guards_size) {
     for(int i=0; i<guards_size; ++i){
-        free(guards[i]);
+        free_guard(guards[i]);
         guards[i] = NULL;
     }
     free(guards);
@@ -174,7 +189,6 @@ int main() {
         }
     }
 
-    /*print_logs(logs, logs_size);*/
     sort_logs(logs, logs_size);
     /*printf("\n");*/
     //get setup guard_ids
@@ -187,9 +201,7 @@ int main() {
             guard_id = logs[i]->guard_id;
             guard_loc = find_guard(guards, guards_size, guard_id);
             if(guard_loc == -1){
-                struct guard* g = malloc(sizeof(struct guard));
-                g->id = guard_id;
-                g->minutes_asleep = 0;
+                struct guard* g = new_guard(guard_id);
                 guard_loc = guards_size;
                 guards[guards_size++] = g;
                 if (guards_size >= guards_cap) {
@@ -202,6 +214,9 @@ int main() {
                 sleep_start = logs[i]->minute;
             }
             if (logs[i]->type == AWAKE) {
+                for(int j=sleep_start; j<logs[i]->minute;++j){
+                    guards[guard_loc]->minutes[j] ++;
+                }
                 guards[guard_loc]->minutes_asleep += (logs[i]->minute - sleep_start);
                 sleep_start = 0;
             }
@@ -218,8 +233,37 @@ int main() {
         }
     }
     printf("Sleep Guy = %d\tTime = %d\n", guards[sleep_spot]->id, sleep_time);
+    int common_minute = -1;
+    int max_time = 0;
+    for(int i=0; i<60; ++i){
+        int minutes = guards[sleep_spot]->minutes[i];
+        if(minutes > max_time){
+            max_time = minutes;
+            common_minute = i;
+        }
+    }
+    printf("common minute = %d\n", common_minute);
+    printf("part1 answer = %d\n", common_minute * guards[sleep_spot]->id);
 
+    int biggest_guard = -1;
+    int biggest_minute = -1;
+    int biggest_minute_size = -1;
+    for(int i=0; i<guards_size; ++i){
+        /*printf("guard = %d\n", guards[i]->id);*/
+        for(int j=0;j<60;++j){
+            /*printf("\t%02d: %d\n", j, guards[i]->minutes[j]);*/
+            if (guards[i]->minutes[j] > biggest_minute_size){
+                biggest_guard = i;
+                biggest_minute = j;
+                biggest_minute_size = guards[i]->minutes[j];
+            }
+        }
+        /*printf("\n");*/
+    }
     /*print_logs(logs, logs_size);*/
+    printf("biggest guard = %d\tbiggest minute = %d\tbiggest minute size = %d\n", guards[biggest_guard]->id, biggest_minute, biggest_minute_size);
+    printf("part2 answer = %d\n", biggest_minute * guards[biggest_guard]->id);
+
     free_logs(logs, logs_size);
     free_guards(guards, guards_size);
     return 0;
