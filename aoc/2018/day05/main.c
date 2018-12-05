@@ -6,12 +6,17 @@ int main() {
     /*scanf("%50005s", s);*/
     /*printf("%s\n", s);*/
 
-    for (char a='a'; a<='z'; ++a){
+    for (char a='a'; a<='z' + 1; ++a){
         int i=1;
         while(1) {
             char in_name[40], out_name[40];
-            sprintf(in_name, "inputs/%c/input_%03d", a, i);
-            sprintf(out_name, "inputs/%c/input_%03d", a, ++i);
+            if (a == 'z' + 1){
+                sprintf(in_name, "inputs/input_%03d", i);
+                sprintf(out_name, "inputs/input_%03d", ++i);
+            } else {
+                sprintf(in_name, "inputs/%c/input_%03d", a, i);
+                sprintf(out_name, "inputs/%c/input_%03d", a, ++i);
+            }
             /*printf("%s\t%s\n", in_name, out_name);*/
             FILE* inf = fopen(in_name, "r");
             FILE* outf = fopen(out_name, "w");
