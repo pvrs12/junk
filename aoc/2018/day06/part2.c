@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 struct point {
 	int x;
@@ -41,7 +43,8 @@ int manhattan(int x, int y, const struct point *points, size_t points_len) {
 }
 
 int main() {
-	size_t points_len = 0, points_cap=100;
+    clock_t start_time = clock();
+	size_t points_len = 0;
 	struct point points[51]; 
 
 	int minx=100, maxx=0, miny=100, maxy=100;
@@ -95,6 +98,8 @@ int main() {
 	}
 	printf("part 1 = %d\n",max_area);
 	printf("part 2 = %d\n", area);
+    clock_t end_time = clock();
+    printf("%.2fms\n", (float)(end_time - start_time)/CLOCKS_PER_SEC*1000.);
 
 	return 0;
 }

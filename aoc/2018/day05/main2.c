@@ -2,10 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <time.h>
+
 int main() {
+  float startTime = (float)clock()/CLOCKS_PER_SEC;
   size_t stack_cap=100;
   char* stack = malloc(sizeof(char) * stack_cap);
   for(char a='a'; a<='z'+1; ++a){
+    // "empty" the stack
     size_t stack_len=0;
     while(1){
       char c = (char)fgetc(stdin);
@@ -31,4 +35,6 @@ int main() {
     printf("%c\t%lu\n", a, stack_len -1);
   }
   free(stack);
+  float endTime = (float)clock()/CLOCKS_PER_SEC;
+  printf("%f\n", (endTime - startTime)*1000);
 }
