@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 struct marble {
     int number;
@@ -17,12 +18,11 @@ void remove_marble(struct marble* m) {
     m = NULL;
 }
 
-struct marble* new_marble(int number, struct marble* current, unsigned long long* player_score, int player_num) {
+struct marble* new_marble(int number, struct marble* current, unsigned long long* player_score) {
     if (number % 23 == 0) {
         (*player_score) += number;
         struct marble* seven = current -> prev -> prev -> prev -> prev -> prev -> prev -> prev;
         struct marble* current = seven -> next;
-        /*printf("removing %d and %d for player %d\n", number, seven->number, player_num);*/
         (*player_score) += seven->number;
         remove_marble(seven);
         return current;
@@ -74,8 +74,9 @@ const int MARBLES = 70784*100;
 /*const int MARBLES = 25;*/
 
 int main() {
+    clock_t start = clock();
     struct marble* current = malloc(sizeof(struct marble));
-    struct marble* zero = current;
+    /*struct marble* zero = current;*/
 
     current -> number = 0;
 
@@ -88,7 +89,7 @@ int main() {
     }
 
     for(int i=0; i<MARBLES; ++i){
-        current = new_marble(i + 1, current, &players[i % PLAYERS], i % PLAYERS);
+        current = new_marble(i + 1, current, &players[i % PLAYERS]);
         /*print_chain(zero);*/
     }
     unsigned long long max_score = 0;
@@ -99,4 +100,6 @@ int main() {
     }
     printf("score = %llu\n", max_score);
     free_marbles(current);
+    clock_t end = clock();
+    printf("%.3fms\n", ((float)(end - start))/CLOCKS_PER_SEC * 1000);
 }
