@@ -99,7 +99,7 @@ int main() {
         }
     }
     printf("score = %llu\n", max_score);
-    free_marbles(current);
     clock_t end = clock();
-    printf("%.3fms\n", ((float)(end - start))/CLOCKS_PER_SEC * 1000);
+    /*free_marbles(current);*/
+    fprintf(stderr, "%.3f\n", ((float)(end - start))/CLOCKS_PER_SEC * 1000);
 }
