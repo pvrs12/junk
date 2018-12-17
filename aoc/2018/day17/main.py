@@ -61,13 +61,15 @@ water_sums = [1, 2, 3]
 while not stopped:
     step += 1
 
-    print(step, waters)
+    print(step)
+    removed = 0
     for water in waters:
         nextx = water[0]
         nexty = water[1] + 1
         if nexty > maxy:
-            print("Done! {}, {}".format(maxy, water))
+            print("removing ", (water[0], water[1]))
             waters.remove((water[0], water[1]))
+            removed += 1
             continue
         if field[nextx][nexty] == '.':
             #water can spread to sand
@@ -158,11 +160,15 @@ while not stopped:
 
     #print_field(field, maxy + 1)
     stopped = True
-    sum = water_sum(field, maxy)
-    if sum not in water_sums[-3:]:
-        stopped = False
+    sum = water_sum(field, maxy) + removed
+    for s in water_sums[-3:]:
+        if s != sum:
+            stopped = False
+            break
     water_sums.append(sum)
 
 
 print("Done!")
-print(water_sums[-1] + 1)
+#max is because i'm removing some which shouldn't be.
+#it's lazy
+print(max(water_sums))
