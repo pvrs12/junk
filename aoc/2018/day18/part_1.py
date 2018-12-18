@@ -48,7 +48,7 @@ with open("input.txt") as f:
     for line in f:
         woods.append([x for x in line.strip()])
 
-    for min in range(1000000000 ):
+    for min in range(10 ):
         new_woods = []
         for x in range(len(woods)):
             new_copse = []
@@ -91,3 +91,4 @@ with open("input.txt") as f:
             past_sums .append(sum_woods())
         #print(sum_woods())
         #print_woods()
+    print(sum_woods())
