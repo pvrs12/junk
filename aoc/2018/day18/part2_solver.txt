@@ -1,3 +1,11 @@
+
+            #part 2
+            ### Ctrl+C after duplicate sums happen a lot
+            ### copy the minute and the past_sums array
+            ### using the last value in the past_sums, find the start of the loop
+            ### the difference in position is the modulo of the cylcle
+            ### subtract the minute from 1000000000 and subtract the size of the loop (less 1) then modulo the loop size
+
  213321
  214968
  218880
